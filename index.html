@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Контурная карта мира — Все страны (6 заданий)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    #map-wrapper {
+      position: relative;
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+      background: #cfe2f3;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #cfe2f3;
+      z-index: 1;
+    }
+
+    #map.paper-mode {
+      background: #e2e8f0;
+    }
+
+    /* Слой SVG для линий-выносок и паттернов штриховки */
+    #callout-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 420;
+    }
+
+    /* Контейнер для умных неперекрывающихся подписей */
+    #labels-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 430;
+      overflow: hidden;
+    }
+
+    /* Стиль плашки подписи страны */
+    .smart-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: grab;
+      display: inline-flex;
+      align-items: center;
+      gap: 3.5px;
+      padding: 2px 5.5px;
+      border-radius: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      line-height: 1.15;
+      white-space: nowrap;
+      color: #ffffff;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1.2px solid rgba(255, 255, 255, 0.88);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32);
+      transition: box-shadow 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .smart-label.size-sm {
+      font-size: 9px;
+      padding: 1px 4px;
+      gap: 2.5px;
+      border-radius: 4px;
+      border-width: 1px;
+    }
+
+    .smart-label.size-md {
+      font-size: 10.5px;
+      padding: 2px 5.5px;
+    }
+
+    .smart-label.size-lg {
+      font-size: 12px;
+      padding: 2.5px 7px;
+      gap: 4px;
+    }
+
+    .smart-label.paper-theme {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0f172a;
+      border: 1.2px solid #334155;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+    }
+
+    .smart-label:hover,
+    .smart-label.highlighted {
+      z-index: 999 !important;
+      background: #020617 !important;
+      color: #ffffff !important;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.55), 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .smart-label:active {
+      cursor: grabbing;
+    }
+
+    .label-dot {
+      width: 6.5px;
+      height: 6.5px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.85);
+    }
+
+    .smart-label.size-sm .label-dot {
+      width: 5.5px;
+      height: 5.5px;
+    }
+
+    .label-num {
+      font-size: 0.88em;
+      font-weight: 800;
+      opacity: 0.85;
+      padding-right: 1px;
+    }
+
+    .leaflet-interactive {
+      transition: fill-opacity 0.18s ease, stroke-width 0.18s ease;
+    }
+  </style>
+</head>
+<body class="flex flex-col md:flex-row">
+
+  <aside id="sidebar" class="w-full md:w-[380px] lg:w-[400px] bg-slate-900 border-r border-slate-800 flex flex-col h-full z-30 shrink-0 transition-all duration-300">
+    <!-- Шапка панели -->
+    <div class="p-3.5 border-b border-slate-800 bg-slate-950/60">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <span class="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-300 rounded border border-sky-500/30 mb-0.5">
+            География • Контурная карта
+          </span>
+          <h1 class="text-sm sm:text-base font-extrabold text-white leading-tight">
+            Политическая карта мира (6 заданий)
+          </h1>
+        </div>
+        <button onclick="resetMapView()" title="Сбросить масштаб карты" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition shrink-0">
+          🌍 Весь мир
+        </button>
+      </div>
+      <div id="status-bar" class="mt-1.5 flex items-center gap-2 text-[11px] text-sky-400 font-medium">
+        <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+        <span id="status-text">Загрузка точных векторных границ стран...</span>
+      </div>
+    </div>
+
+    <!-- Кнопки 5 категорий ДЗ + настройки подписей -->
+    <div class="p-3 space-y-2 border-b border-slate-800 overflow-y-auto max-h-[58vh]">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Задания карты:</span>
+        <div class="flex items-center gap-1.5">
+          <button id="btn-list-mode" onclick="toggleDatasetMode()" title="Переключить между полным списком всех стран мира и кратким списком по 10 стран" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition">
+            ✓ Все страны мира
+          </button>
+          <span id="active-count-badge" class="text-[11px] font-bold text-slate-200 bg-slate-800 px-2 py-0.5 rounded">126 стран</span>
+        </div>
+      </div>
+
+      <button id="btn-all" onclick="selectCategory('all')" class="cat-btn w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white border-2 border-white ring-2 ring-sky-400 shadow-sm transition">
+        <span class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-sm bg-gradient-to-br from-rose-500 via-amber-500 to-emerald-500 inline-block"></span>
+          <span>Показать все категории сразу</span>
+        </span>
+        <span id="badge-total-all" class="px-1.5 py-0.5 text-[10px] rounded bg-slate-900/60">Все 5 заданий</span>
+      </button>
+
+      <div class="grid grid-cols-1 gap-1.5">
+        <!-- 1. Монархии -->
+        <div class="flex items-center gap-1">
+          <button id="btn-mon" onclick="selectCategory('mon')" class="cat-btn flex-1 flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white border-2 border-transparent transition">
+            <span class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-white"></span>
+              <span>1. Монархии мира</span>
+            </span>
+            <span id="count-mon" class="px-1.5 py-0.5 text-[10px] rounded bg-black/25">29 стран</span>
+          </button>
+          <button id="lbl-toggle-mon" onclick="toggleGroupLabels('mon')" title="Вкл/Выкл подписи монархий" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 transition">
+            🏷️
+          </button>
+        </div>
+
+        <!-- 2. Федерации -->
+        <div class="flex items-center gap-1">
+          <button id="btn-fed" onclick="selectCategory('fed')" class="cat-btn flex-1 flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white border-2 border-transparent transition">
+            <span class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-white"></span>
+              <span>2. Федеративные государства</span>
+            </span>
+            <span id="count-fed" class="px-1.5 py-0.5 text-[10px] rounded bg-black/25">28 стран</span>
+          </button>
+          <button id="lbl-toggle-fed" onclick="toggleGroupLabels('fed')" title="Вкл/Выкл подписи федераций" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition">
+            🏷️
+          </button>
+        </div>
+
+        <!-- 3. Островные -->
+        <div class="flex items-center gap-1">
+          <button id="btn-isl" onclick="selectCategory('isl')" class="cat-btn flex-1 flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white border-2 border-transparent transition">
+            <span class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-white"></span>
+              <span>3. Островные государства</span>
+            </span>
+            <span id="count-isl" class="px-1.5 py-0.5 text-[10px] rounded bg-black/25">23 страны</span>
+          </button>
+          <button id="lbl-toggle-isl" onclick="toggleGroupLabels('isl')" title="Вкл/Выкл подписи островных стран" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 transition">
+            🏷️
+          </button>
+        </div>
+
+        <!-- 4. Архипелаги -->
+        <div class="flex items-center gap-1">
+          <button id="btn-arc" onclick="selectCategory('arc')" class="cat-btn flex-1 flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold bg-violet-600 hover:bg-violet-500 text-white border-2 border-transparent transition">
+            <span class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-white"></span>
+              <span>4. Страны-архипелаги</span>
+            </span>
+            <span id="count-arc" class="px-1.5 py-0.5 text-[10px] rounded bg-black/25">24 страны</span>
+          </button>
+          <button id="lbl-toggle-arc" onclick="toggleGroupLabels('arc')" title="Вкл/Выкл подписи архипелагов" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-violet-400 border border-slate-700 transition">
+            🏷️
+          </button>
+        </div>
+
+        <!-- 5. Внутриконтинентальные -->
+        <div class="flex items-center gap-1">
+          <button id="btn-lnd" onclick="selectCategory('lnd')" class="cat-btn flex-1 flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white border-2 border-transparent transition">
+            <span class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-white"></span>
+              <span>5. Внутриконтинентальные</span>
+            </span>
+            <span id="count-lnd" class="px-1.5 py-0.5 text-[10px] rounded bg-black/25">44 страны</span>
+          </button>
+          <button id="lbl-toggle-lnd" onclick="toggleGroupLabels('lnd')" title="Вкл/Выкл подписи внутриконтинентальных стран" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition">
+            🏷️
+          </button>
+        </div>
+      </div>
+
+      <!-- Панель управления подписями и видом -->
+      <div class="pt-2 border-t border-slate-800 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Подписи и оформление:</span>
+          <button onclick="cycleLabelSize()" id="btn-label-size" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition">
+            🔤 Размер: Авто
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="btn-toggle-all-labels" onclick="toggleAllLabels()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white transition flex items-center justify-center gap-1.5">
+            <span>👁️ Подписи: ВКЛ</span>
+          </button>
+          <button id="btn-spread-labels" onclick="toggleSmartSpread()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center justify-center gap-1.5">
+            <span>📐 Выноски: ВКЛ</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1.5">
+          <button id="btn-Geo-labels" onclick="presetLabelsOnlyGeo()" title="Оставить подписи только для Островных, Архипелагов и Внутриконтинентальных" class="px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            🏝️ Подписи 3–5
+          </button>
+          <button id="btn-paper-mode" onclick="togglePaperMode()" class="px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            📄 Светлый стиль
+          </button>
+          <button onclick="resetDraggedLabels()" title="Сбросить ручное перетаскивание подписей" class="px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            🔄 Сброс выносок
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Поиск и список стран -->
+    <div class="p-3 flex-1 flex flex-col min-h-0">
+      <div class="relative mb-2">
+        <input
+          id="search-input"
+          type="text"
+          oninput="renderCountryList()"
+          placeholder="Поиск страны, столицы или региона..."
+          class="w-full bg-slate-950 text-slate-100 placeholder-slate-500 text-xs rounded-lg px-3 py-2 pl-8 border border-slate-800 focus:outline-none focus:border-sky-500"
+        />
+        <span class="absolute left-2.5 top-2 text-slate-500 text-xs">🔍</span>
+      </div>
+
+      <!-- Карточка выбранной страны -->
+      <div id="country-info-card" class="hidden mb-2 p-2.5 rounded-lg bg-slate-800/95 border border-slate-700 text-xs space-y-1">
+        <div class="flex items-center justify-between">
+          <span id="info-title" class="font-extrabold text-sm text-white"></span>
+          <button onclick="closeInfoCard()" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+        </div>
+        <div id="info-badges" class="flex flex-wrap gap-1"></div>
+        <div id="info-details" class="text-slate-300 text-[11px] leading-relaxed"></div>
+      </div>
+
+      <!-- Прокручиваемый список стран -->
+      <div id="list-box" class="flex-1 overflow-y-auto space-y-1 pr-1"></div>
+    </div>
+  </aside>
+
+  <main id="map-wrapper">
+    <!-- Верхняя панель быстрых регионов и скрытия панели для скриншота -->
+    <div class="absolute top-3 left-14 right-4 z-[500] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+      <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+        <button onclick="toggleSidebar()" id="btn-sidebar-toggle" class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-bold border border-slate-700 shadow-lg backdrop-blur flex items-center gap-1.5 transition">
+          <span>◀ Скрыть панель</span>
+        </button>
+
+        <!-- Быстрый зум по регионам мира для детального просмотра плотных групп стран -->
+        <div class="flex flex-wrap items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-700 shadow-lg backdrop-blur">
+          <button onclick="flyToRegion('world')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition">🌍 Мир</button>
+          <button onclick="flyToRegion('europe')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition">🏰 Европа</button>
+          <button onclick="flyToRegion('asia')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition">🕌 Азия</button>
+          <button onclick="flyToRegion('africa')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition">🦁 Африка</button>
+          <button onclick="flyToRegion('caribbean')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition">🏝️ Карибы</button>
+          <button onclick="flyToRegion('oceania')" class="px-2 py-1 rounded text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition">🌊 Океания</button>
+        </div>
+      </div>
+
+      <div id="map-header-banner" class="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/85 text-slate-200 text-[11px] font-semibold border border-slate-700/80 shadow-lg backdrop-blur pointer-events-auto">
+        <span>💡 Любую подпись можно перетащить мышкой • Клик по стране — фокус и справка</span>
+      </div>
+    </div>
+
+    <!-- Контейнер карты Leaflet -->
+    <div id="map"></div>
+
+    <!-- Слой линий-выносок и динамических паттернов штриховки -->
+    <svg id="callout-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs id="svg-patterns-defs"></defs>
+      <g id="callout-lines-group"></g>
+    </svg>
+
+    <!-- Слой умных подписей -->
+    <div id="labels-container"></div>
+
+    <!-- ЗАДАНИЕ 6: Оформленная Легенда карты (Условные знаки) -->
+    <div id="map-legend" class="absolute bottom-4 right-4 z-[500] w-72 sm:w-80 rounded-xl bg-slate-900/95 text-slate-100 border border-slate-700 shadow-2xl backdrop-blur p-3 transition-all">
+      <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-700/80">
+        <div class="flex items-center gap-1.5">
+          <span class="text-sm">🗺️</span>
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-white">
+            6. Условные знаки (Легенда)
+          </h2>
+        </div>
+        <button onclick="toggleLegendCollapse()" id="legend-collapse-btn" class="text-[11px] text-slate-400 hover:text-white font-semibold px-1.5 py-0.5 rounded bg-slate-800">
+          Свернуть
+        </button>
+      </div>
+
+      <div id="legend-body" class="space-y-2 text-[11px]">
+        <div class="space-y-1">
+          <div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/60 p-1 rounded" onclick="selectCategory('mon')">
+            <span class="flex items-center gap-2">
+              <span class="w-4 h-3 rounded-sm bg-[#e11d48] border border-white/80 inline-block shrink-0"></span>
+              <span class="font-semibold">1. Монархии мира</span>
+            </span>
+            <span id="leg-count-mon" class="text-slate-400 font-bold">29 стран</span>
+          </div>
+
+          <div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/60 p-1 rounded" onclick="selectCategory('fed')">
+            <span class="flex items-center gap-2">
+              <span class="w-4 h-3 rounded-sm bg-[#d97706] border border-white/80 inline-block shrink-0"></span>
+              <span class="font-semibold">2. Федеративные гос-ва</span>
+            </span>
+            <span id="leg-count-fed" class="text-slate-400 font-bold">28 стран</span>
+          </div>
+
+          <div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/60 p-1 rounded" onclick="selectCategory('isl')">
+            <span class="flex items-center gap-2">
+              <span class="w-4 h-3 rounded-sm bg-[#2563eb] border border-white/80 inline-block shrink-0"></span>
+              <span class="font-semibold">3. Островные государства</span>
+            </span>
+            <span id="leg-count-isl" class="text-slate-400 font-bold">23 страны</span>
+          </div>
+
+          <div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/60 p-1 rounded" onclick="selectCategory('arc')">
+            <span class="flex items-center gap-2">
+              <span class="w-4 h-3 rounded-sm bg-[#7c3aed] border border-white/80 inline-block shrink-0"></span>
+              <span class="font-semibold">4. Страны-архипелаги</span>
+            </span>
+            <span id="leg-count-arc" class="text-slate-400 font-bold">24 страны</span>
+          </div>
+
+          <div class="flex items-center justify-between cursor-pointer hover:bg-slate-800/60 p-1 rounded" onclick="selectCategory('lnd')">
+            <span class="flex items-center gap-2">
+              <span class="w-4 h-3 rounded-sm bg-[#059669] border border-white/80 inline-block shrink-0"></span>
+              <span class="font-semibold">5. Внутриконтинентальные</span>
+            </span>
+            <span id="leg-count-lnd" class="text-slate-400 font-bold">44 страны</span>
+          </div>
+        </div>
+
+        <!-- Совмещённые категории (штриховка) -->
+        <div class="pt-1.5 border-t border-slate-800 space-y-1 text-[10.5px] text-slate-300">
+          <div class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">
+            Совмещённые признаки (бицветная штриховка):
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-3 rounded-sm border border-white/80 inline-block shrink-0" style="background: repeating-linear-gradient(45deg, #e11d48 0 4px, #d97706 4px 8px);"></span>
+            <span><b>Монархия + Федерация</b> (Бельгия, Малайзия, ОАЭ)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-3 rounded-sm border border-white/80 inline-block shrink-0" style="background: repeating-linear-gradient(45deg, #d97706 0 4px, #059669 4px 8px);"></span>
+            <span><b>Федерация + Внутриконт.</b> (Австрия, Швейцария, Непал, Эфиопия и др.)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-3 rounded-sm border border-white/80 inline-block shrink-0" style="background: repeating-linear-gradient(45deg, #e11d48 0 4px, #7c3aed 4px 8px);"></span>
+            <span><b>Монархия + Остров/Архипелаг</b> (Великобритания, Япония, Тонга, Бахрейн, Бруней)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-full border-2 border-dashed border-sky-400 bg-sky-400/20 inline-block shrink-0"></span>
+            <span>Акватория микрогосударств и малых островов</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <script>
+    // Инициализируем карту со стандартным SVG-рендерером для поддержки бицветной штриховки
+    const map = L.map('map', {
+      center: [22, 18],
+      zoom: 2.35,
+      zoomSnap: 0.25,
+      zoomDelta: 0.5,
+      minZoom: 2,
+      maxZoom: 8,
+      maxBounds: [[-85, -195], [85, 225]],
+      maxBoundsViscosity: 0.9,
+      preferCanvas: false,
+      worldCopyJump: false
+    });
+
+    // Подложка карты без вертикального обрезания на 180° меридиане
+    const tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Контурная карта мира • ДЗ по географии',
+      opacity: 0.45
+    }).addTo(map);
+
+    // Примечание: для стран Океании у 180-го меридиана (Тонга, Самоа) долгота задана в восточном продолжении (+184.8°, +187.9°), чтобы вся Океания была единым регионом справа от Австралии, как в школьном атласе.
+    const categories = {
+      mon: {
+        id: 'mon',
+        num: 1,
+        color: '#e11d48',
+        name: '1. Монархии мира',
+        shortLabel: 'Монархия',
+        items: [
+          // Европа (12)
+          { name: "Великобритания", lat: 54.2, lng: -2.2, iso3: "GBR", numCode: "826", capital: "Лондон", info: "Европа • Конституционная парламентская монархия (королевство)", dx: -68, dy: -22, core10: true },
+          { name: "Испания", lat: 40.2, lng: -3.7, iso3: "ESP", numCode: "724", capital: "Мадрид", info: "Европа • Конституционная монархия (королевство)", dx: -62, dy: 8, core10: true },
+          { name: "Андорра", lat: 42.55, lng: 1.55, iso3: "AND", numCode: "020", capital: "Андорра-ла-Велья", info: "Европа • Парламентское княжество в Пиренеях", dx: -64, dy: -4, micro: true, core10: true },
+          { name: "Монако", lat: 43.73, lng: 7.42, iso3: "MCO", numCode: "492", capital: "Монако", info: "Европа • Конституционная монархия (княжество)", dx: -48, dy: 24, micro: true, core10: true },
+          { name: "Бельгия", lat: 50.65, lng: 4.5, iso3: "BEL", numCode: "056", capital: "Брюссель", info: "Европа • Конституционная монархия и федеративное государство", dx: -68, dy: -10, core10: true },
+          { name: "Нидерланды", lat: 52.2, lng: 5.3, iso3: "NLD", numCode: "528", capital: "Амстердам", info: "Европа • Конституционная монархия (королевство)", dx: -65, dy: -24, core10: true },
+          { name: "Люксембург", lat: 49.75, lng: 6.1, iso3: "LUX", numCode: "442", capital: "Люксембург", info: "Европа • Конституционная монархия (Великое Герцогство)", dx: -65, dy: 2, micro: true, core10: true },
+          { name: "Дания", lat: 56.0, lng: 9.5, iso3: "DNK", numCode: "208", capital: "Копенгаген", info: "Европа • Конституционная монархия (королевство)", dx: -48, dy: -24, core10: true },
+          { name: "Норвегия", lat: 61.5, lng: 8.5, iso3: "NOR", numCode: "578", capital: "Осло", info: "Европа • Конституционная монархия (королевство)", dx: -42, dy: -22, core10: true },
+          { name: "Швеция", lat: 62.5, lng: 15.5, iso3: "SWE", numCode: "752", capital: "Стокгольм", info: "Европа • Конституционная монархия (королевство)", dx: 24, dy: -22, core10: true },
+          { name: "Лихтенштейн", lat: 47.14, lng: 9.55, iso3: "LIE", numCode: "438", capital: "Вадуц", info: "Европа • Конституционная монархия (княжество в Альпах)", dx: -38, dy: 22, micro: true, core10: true },
+          { name: "Ватикан", lat: 41.9, lng: 12.45, iso3: "VAT", numCode: "336", capital: "Ватикан", info: "Европа • Абсолютная теократическая монархия (государство-анклав в Риме)", dx: -22, dy: 34, micro: true, core10: true },
+          // Азия (13)
+          { name: "Япония", lat: 36.2, lng: 138.2, iso3: "JPN", numCode: "392", capital: "Токио", info: "Азия • Конституционная монархия и страна-архипелаг", dx: 48, dy: -12, core10: true },
+          { name: "Малайзия", lat: 4.2, lng: 102.2, iso3: "MYS", numCode: "458", capital: "Куала-Лумпур", info: "Азия • Выборная федеративная конституционная монархия", dx: -62, dy: 10, core10: true },
+          { name: "Таиланд", lat: 15.2, lng: 101.0, iso3: "THA", numCode: "764", capital: "Бангкок", info: "Азия • Конституционная монархия (королевство)", dx: -58, dy: -6, core10: true },
+          { name: "Камбоджа", lat: 12.6, lng: 105.0, iso3: "KHM", numCode: "116", capital: "Пномпень", info: "Азия • Конституционная монархия (королевство)", dx: 48, dy: 8, core10: true },
+          { name: "Бруней", lat: 4.5, lng: 114.7, iso3: "BRN", numCode: "096", capital: "Бандар-Сери-Бегаван", info: "Азия • Абсолютная теократическая монархия (султанат на о. Калимантан)", dx: 52, dy: -8, micro: true, core10: true },
+          { name: "Бутан", lat: 27.5, lng: 90.4, iso3: "BTN", numCode: "064", capital: "Тхимпху", info: "Азия • Конституционная монархия в Гималаях", dx: 45, dy: -14, core10: true },
+          { name: "Саудовская Аравия", lat: 24.0, lng: 44.5, iso3: "SAU", numCode: "682", capital: "Эр-Рияд", info: "Азия • Абсолютная теократическая монархия (королевство)", dx: -38, dy: 16, core10: true },
+          { name: "ОАЭ", lat: 24.0, lng: 54.0, iso3: "ARE", numCode: "784", capital: "Абу-Даби", info: "Азия • Федерация из 7 абсолютных монархий (эмиратов)", dx: 52, dy: 6, core10: true },
+          { name: "Оман", lat: 21.0, lng: 57.0, iso3: "OMN", numCode: "512", capital: "Маскат", info: "Азия • Абсолютная монархия (султанат)", dx: 52, dy: 20, core10: true },
+          { name: "Катар", lat: 25.3, lng: 51.2, iso3: "QAT", numCode: "634", capital: "Доха", info: "Азия • Абсолютная монархия (эмират)", dx: 55, dy: -6, micro: true, core10: true },
+          { name: "Бахрейн", lat: 26.05, lng: 50.55, iso3: "BHR", numCode: "048", capital: "Манама", info: "Азия • Конституционная/дуалистическая островная монархия", dx: 55, dy: -18, micro: true, core10: true },
+          { name: "Кувейт", lat: 29.3, lng: 47.5, iso3: "KWT", numCode: "414", capital: "Эль-Кувейт", info: "Азия • Конституционная/дуалистическая монархия (эмират)", dx: 48, dy: -24, micro: true, core10: true },
+          { name: "Иордания", lat: 31.2, lng: 36.5, iso3: "JOR", numCode: "400", capital: "Амман", info: "Азия • Дуалистическая/конституционная монархия (королевство)", dx: -52, dy: -4, core10: true },
+          // Африка (3)
+          { name: "Марокко", lat: 31.8, lng: -6.2, iso3: "MAR", numCode: "504", capital: "Рабат", info: "Африка • Конституционная/дуалистическая монархия (королевство)", dx: -58, dy: -8, core10: true },
+          { name: "Лесото", lat: -29.6, lng: 28.2, iso3: "LSO", numCode: "426", capital: "Масеру", info: "Африка • Конституционная монархия, анклав внутри ЮАР", dx: -42, dy: 24, core10: true },
+          { name: "Эсватини", lat: -26.5, lng: 31.5, iso3: "SWZ", numCode: "748", capital: "Мбабане", info: "Африка • Абсолютная/дуалистическая монархия (королевство)", dx: 52, dy: 8, core10: true },
+          // Океания (1)
+          { name: "Тонга", lat: -21.2, lng: 184.8, iso3: "TON", numCode: "776", capital: "Нукуалофа", info: "Океания • Конституционная монархия (королевство на архипелаге Тонга)", dx: 45, dy: 14, micro: true, core10: true }
+        ]
+      },
+      fed: {
+        id: 'fed',
+        num: 2,
+        color: '#d97706',
+        name: '2. Федеративные государства',
+        shortLabel: 'Федерация',
+        items: [
+          // Европа (6)
+          { name: "Россия", lat: 62.0, lng: 92.0, iso3: "RUS", numCode: "643", capital: "Москва", info: "Евразия • Крупнейшее по площади федеративное государство мира", dx: 0, dy: -14, core10: true },
+          { name: "Германия", lat: 51.2, lng: 10.4, iso3: "DEU", numCode: "276", capital: "Берлин", info: "Европа • Федеративная парламентская республика (16 земель)", dx: 0, dy: -22, core10: true },
+          { name: "Австрия", lat: 47.6, lng: 14.2, iso3: "AUT", numCode: "040", capital: "Вена", info: "Европа • Федеративная республика (9 земель), внутриконтинентальная", dx: 38, dy: 12, core10: true },
+          { name: "Швейцария", lat: 46.8, lng: 8.2, iso3: "CHE", numCode: "756", capital: "Берн", info: "Европа • Федеративная республика (26 кантонов), внутриконтинентальная", dx: -48, dy: 14, core10: true },
+          { name: "Бельгия", lat: 50.65, lng: 4.5, iso3: "BEL", numCode: "056", capital: "Брюссель", info: "Европа • Федеративное королевство", dx: -68, dy: -10, core10: true },
+          { name: "Босния и Герцеговина", lat: 44.1, lng: 17.8, iso3: "BIH", numCode: "070", capital: "Сараево", info: "Европа • Федеративное государство на Балканах", dx: 48, dy: 24, core10: true },
+          // Азия (7)
+          { name: "Индия", lat: 22.5, lng: 79.0, iso3: "IND", numCode: "356", capital: "Нью-Дели", info: "Азия • Федеративная республика (28 штатов и 8 союзных территорий)", dx: -25, dy: 18, core10: true },
+          { name: "Пакистан", lat: 30.2, lng: 69.3, iso3: "PAK", numCode: "586", capital: "Исламабад", info: "Азия • Федеративная исламская республика", dx: -42, dy: -8, core10: true },
+          { name: "Непал", lat: 28.3, lng: 84.1, iso3: "NPL", numCode: "524", capital: "Катманду", info: "Азия • Федеративная республика в Гималаях", dx: 0, dy: -20, core10: true },
+          { name: "Малайзия", lat: 4.2, lng: 102.2, iso3: "MYS", numCode: "458", capital: "Куала-Лумпур", info: "Азия • Федеративная конституционная монархия", dx: -62, dy: 10, core10: true },
+          { name: "Мьянма", lat: 21.0, lng: 96.0, iso3: "MMR", numCode: "104", capital: "Нейпьидо", info: "Азия • Государство с федеративным устройством", dx: 32, dy: -10, core10: true },
+          { name: "Ирак", lat: 33.2, lng: 43.7, iso3: "IRQ", numCode: "368", capital: "Багдад", info: "Азия • Федеративная парламентская республика", dx: -32, dy: -18, core10: true },
+          { name: "ОАЭ", lat: 24.0, lng: 54.0, iso3: "ARE", numCode: "784", capital: "Абу-Даби", info: "Азия • Федерация 7 абсолютных монархий (эмиратов)", dx: 52, dy: 6, core10: true },
+          // Африка (6)
+          { name: "Нигерия", lat: 9.2, lng: 8.2, iso3: "NGA", numCode: "566", capital: "Абуджа", info: "Африка • Федеративная республика (36 штатов)", dx: -32, dy: 18, core10: true },
+          { name: "Эфиопия", lat: 9.0, lng: 39.5, iso3: "ETH", numCode: "231", capital: "Аддис-Абеба", info: "Африка • Федеративная республика в Восточной Африке", dx: 42, dy: -10, core10: true },
+          { name: "Судан", lat: 15.8, lng: 30.2, iso3: "SDN", numCode: "729", altCode: "736", capital: "Хартум", info: "Африка • Федеративная республика (18 штатов)", dx: -22, dy: -12, core10: true },
+          { name: "Южный Судан", lat: 7.2, lng: 30.2, iso3: "SSD", numCode: "728", capital: "Джуба", info: "Африка • Федеративная республика, внутриконтинентальная", dx: -22, dy: 16, core10: true },
+          { name: "Сомали", lat: 5.2, lng: 46.2, iso3: "SOM", numCode: "706", capital: "Могадишо", info: "Африка • Федеративная республика на полуострове Сомали", dx: 52, dy: 6, core10: true },
+          { name: "Коморы", lat: -11.7, lng: 43.3, iso3: "COM", numCode: "174", capital: "Морони", info: "Африка • Федеративная республика на Коморском архипелаге", dx: -48, dy: -12, micro: true, core10: true },
+          // Америка (7)
+          { name: "Канада", lat: 58.0, lng: -106.0, iso3: "CAN", numCode: "124", capital: "Оттава", info: "Северная Америка • Федеративное государство (10 провинций и 3 территории)", dx: 0, dy: -14, core10: true },
+          { name: "США", lat: 39.5, lng: -98.5, iso3: "USA", numCode: "840", capital: "Вашингтон", info: "Северная Америка • Федеративная президентская республика (50 штатов)", dx: 0, dy: -12, core10: true },
+          { name: "Мексика", lat: 23.6, lng: -102.5, iso3: "MEX", numCode: "484", capital: "Мехико", info: "Северная Америка • Мексиканские Соединённые Штаты (31 штат)", dx: -52, dy: 10, core10: true },
+          { name: "Бразилия", lat: -11.5, lng: -52.0, iso3: "BRA", numCode: "076", capital: "Бразилиа", info: "Южная Америка • Федеративная республика (26 штатов)", dx: 32, dy: 0, core10: true },
+          { name: "Аргентина", lat: -35.0, lng: -65.0, iso3: "ARG", numCode: "032", capital: "Буэнос-Айрес", info: "Южная Америка • Федеративная республика (23 провинции)", dx: 0, dy: 14, core10: true },
+          { name: "Венесуэла", lat: 7.2, lng: -66.0, iso3: "VEN", numCode: "862", capital: "Каракас", info: "Южная Америка • Федеративная Боливарианская Республика (23 штата)", dx: 0, dy: 16, core10: true },
+          { name: "Сент-Китс и Невис", lat: 17.3, lng: -62.7, iso3: "KNA", numCode: "659", capital: "Бастер", info: "Америка • Самая маленькая федерация мира (2 острова в Карибском море)", dx: 62, dy: -18, micro: true, core10: true },
+          // Океания (2)
+          { name: "Австралия", lat: -25.0, lng: 134.0, iso3: "AUS", numCode: "036", capital: "Канберра", info: "Австралия и Океания • Австралийский Союз (6 штатов и 2 территории)", dx: 0, dy: -12, core10: true },
+          { name: "ФШ Микронезии", lat: 6.9, lng: 158.2, iso3: "FSM", numCode: "583", capital: "Паликир", info: "Океания • Федеративные Штаты Микронезии (4 штата на Каролинских о-вах)", dx: 42, dy: -18, micro: true, core10: true }
+        ]
+      },
+      isl: {
+        id: 'isl',
+        num: 3,
+        color: '#2563eb',
+        name: '3. Островные государства',
+        shortLabel: 'Островное гос-во',
+        items: [
+          // Европа (3)
+          { name: "Исландия", lat: 65.0, lng: -18.5, iso3: "ISL", numCode: "352", capital: "Рейкьявик", info: "Европа • Островное государство на одноимённом острове в Северной Атлантике", dx: 0, dy: -20, core10: true },
+          { name: "Ирландия", lat: 53.3, lng: -8.0, iso3: "IRL", numCode: "372", capital: "Дублин", info: "Европа • Островное государство на о. Ирландия", dx: -62, dy: -10, core10: true },
+          { name: "Мальта", lat: 35.9, lng: 14.4, iso3: "MLT", numCode: "470", capital: "Валлетта", info: "Европа • Островное государство в Средиземном море", dx: -35, dy: 26, micro: true, core10: false },
+          // Азия (6)
+          { name: "Кипр", lat: 35.1, lng: 33.4, iso3: "CYP", numCode: "196", capital: "Никосия", info: "Азия/Европа • Островное государство в восточной части Средиземного моря", dx: -48, dy: -16, micro: true, core10: true },
+          { name: "Бахрейн", lat: 26.05, lng: 50.55, iso3: "BHR", numCode: "048", capital: "Манама", info: "Азия • Островное королевство в Персидском заливе", dx: 55, dy: -18, micro: true, core10: false },
+          { name: "Шри-Ланка", lat: 7.8, lng: 80.7, iso3: "LKA", numCode: "144", capital: "Шри-Джаяварденепура-Котте", info: "Азия • Островное государство в Индийском океане у п-ова Индостан", dx: 42, dy: 20, core10: true },
+          { name: "Сингапур", lat: 1.35, lng: 103.8, iso3: "SGP", numCode: "702", capital: "Сингапур", info: "Азия • Островное город-государство в Юго-Восточной Азии", dx: -52, dy: 24, micro: true, core10: true },
+          { name: "Бруней", lat: 4.5, lng: 114.7, iso3: "BRN", numCode: "096", capital: "Бандар-Сери-Бегаван", info: "Азия • Государство на северо-западе острова Калимантан", dx: 52, dy: -8, micro: true, core10: false },
+          { name: "Восточный Тимор", lat: -8.8, lng: 125.9, iso3: "TLS", numCode: "626", capital: "Дили", info: "Азия • Островное государство в восточной части о. Тимор", dx: 48, dy: 22, micro: true, core10: false },
+          // Африка (3)
+          { name: "Мадагаскар", lat: -19.2, lng: 46.7, iso3: "MDG", numCode: "450", capital: "Антананариву", info: "Африка • Крупнейшее в мире государство на одном острове", dx: 52, dy: 12, core10: true },
+          { name: "Маврикий", lat: -20.3, lng: 57.6, iso3: "MUS", numCode: "480", capital: "Порт-Луи", info: "Африка • Островное государство в западной части Индийского океана", dx: 55, dy: 18, micro: true, core10: false },
+          { name: "Сан-Томе и Принсипи", lat: 0.2, lng: 6.6, iso3: "STP", numCode: "678", capital: "Сан-Томе", info: "Африка • Островное государство в Гвинейском заливе", dx: -58, dy: 14, micro: true, core10: false },
+          // Америка (9)
+          { name: "Куба", lat: 21.8, lng: -79.5, iso3: "CUB", numCode: "192", capital: "Гавана", info: "Америка • Крупнейшее островное государство Вест-Индии (Большие Антильские о-ва)", dx: -55, dy: -12, core10: true },
+          { name: "Ямайка", lat: 18.15, lng: -77.3, iso3: "JAM", numCode: "388", capital: "Кингстон", info: "Америка • Островное государство в Карибском море", dx: -55, dy: 18, core10: true },
+          { name: "Гаити", lat: 19.0, lng: -72.7, iso3: "HTI", numCode: "332", capital: "Порт-о-Пренс", info: "Америка • Островное государство в западной части острова Гаити", dx: -35, dy: -26, core10: true },
+          { name: "Доминиканская Респ.", lat: 18.9, lng: -70.2, iso3: "DOM", numCode: "214", capital: "Санто-Доминго", info: "Америка • Островное государство в восточной части острова Гаити", dx: 42, dy: -22, core10: true },
+          { name: "Доминика", lat: 15.4, lng: -61.35, iso3: "DMA", numCode: "212", capital: "Розо", info: "Америка • Островное государство на одноимённом острове в Карибском море", dx: 58, dy: -4, micro: true, core10: false },
+          { name: "Сент-Люсия", lat: 13.9, lng: -60.98, iso3: "LCA", numCode: "662", capital: "Кастри", info: "Америка • Островное государство в группе Наветренных островов", dx: 58, dy: 8, micro: true, core10: false },
+          { name: "Барбадос", lat: 13.2, lng: -59.55, iso3: "BRB", numCode: "052", capital: "Бриджтаун", info: "Америка • Островное государство на востоке Вест-Индии", dx: 62, dy: 18, micro: true, core10: false },
+          { name: "Гренада", lat: 12.1, lng: -61.68, iso3: "GRD", numCode: "308", capital: "Сент-Джорджес", info: "Америка • Островное государство на юго-востоке Карибского моря", dx: 55, dy: 28, micro: true, core10: false },
+          { name: "Тринидад и Тобаго", lat: 10.4, lng: -61.2, iso3: "TTO", numCode: "780", capital: "Порт-оф-Спейн", info: "Америка • Островное государство у северо-восточного берега Южной Америки", dx: 58, dy: 38, micro: true, core10: false },
+          // Океания (2)
+          { name: "Папуа — Новая Гвинея", lat: -6.3, lng: 145.5, iso3: "PNG", numCode: "598", capital: "Порт-Морсби", info: "Океания • Государство в восточной части о. Новая Гвинея и прилегающих о-вах", dx: -35, dy: -18, core10: false },
+          { name: "Науру", lat: -0.52, lng: 166.93, iso3: "NRU", numCode: "520", capital: "Ярен", info: "Океания • Самая маленькая независимая островная республика мира (коралловый остров)", dx: -45, dy: -14, micro: true, core10: false }
+        ]
+      },
+      arc: {
+        id: 'arc',
+        num: 4,
+        color: '#7c3aed',
+        name: '4. Страны-архипелаги',
+        shortLabel: 'Страна-архипелаг',
+        items: [
+          // Азия (4)
+          { name: "Индонезия", lat: -2.5, lng: 118.0, iso3: "IDN", numCode: "360", capital: "Джакарта", info: "Азия • Крупнейшее в мире государство-архипелаг (более 17 500 островов)", dx: 0, dy: 22, core10: true },
+          { name: "Филиппины", lat: 12.5, lng: 122.0, iso3: "PHL", numCode: "608", capital: "Манила", info: "Азия • Страна-архипелаг в Тихом океане (более 7 600 островов)", dx: 52, dy: 0, core10: true },
+          { name: "Япония", lat: 36.2, lng: 138.2, iso3: "JPN", numCode: "392", capital: "Токио", info: "Азия • Страна-архипелаг на Японских островах (более 6 800 островов)", dx: 48, dy: -12, core10: true },
+          { name: "Мальдивы", lat: 3.2, lng: 73.2, iso3: "MDV", numCode: "462", capital: "Мале", info: "Азия • Государство-архипелаг из 26 атоллов (1 192 коралловых острова) в Индийском океане", dx: -48, dy: 22, micro: true, core10: true },
+          // Европа (1)
+          { name: "Великобритания", lat: 54.2, lng: -2.2, iso3: "GBR", numCode: "826", capital: "Лондон", info: "Европа • Островное государство-архипелаг на Британских островах", dx: -68, dy: -22, core10: true },
+          // Африка (3)
+          { name: "Кабо-Верде", lat: 16.0, lng: -24.0, iso3: "CPV", numCode: "132", capital: "Прая", info: "Африка • Государство-архипелаг на островах Зелёного Мыса (18 островов)", dx: -52, dy: -14, micro: true, core10: true },
+          { name: "Коморы", lat: -11.7, lng: 43.3, iso3: "COM", numCode: "174", capital: "Морони", info: "Африка • Государство на архипелаге Коморские острова в Мозамбикском проливе", dx: -48, dy: -12, micro: true, core10: false },
+          { name: "Сейшельские О-ва", lat: -4.6, lng: 55.5, iso3: "SYC", numCode: "690", capital: "Виктория", info: "Африка • Государство-архипелаг из 115 островов в Индийском океане", dx: 55, dy: -12, micro: true, core10: true },
+          // Америка (4)
+          { name: "Багамские О-ва", lat: 24.5, lng: -77.4, iso3: "BHS", numCode: "044", capital: "Нассау", info: "Америка • Государство-архипелаг из ~700 островов и 2 000 рифов в Атлантике", dx: 48, dy: -28, micro: true, core10: true },
+          { name: "Сент-Китс и Невис", lat: 17.3, lng: -62.7, iso3: "KNA", numCode: "659", capital: "Бастер", info: "Америка • Островная федерация на двух островах Малых Антильских о-вов", dx: 62, dy: -18, micro: true, core10: false },
+          { name: "Антигуа и Барбуда", lat: 17.05, lng: -61.8, iso3: "ATG", numCode: "028", capital: "Сент-Джонс", info: "Америка • Государство на одноимённых островах группы Малых Антильских о-вов", dx: 65, dy: -10, micro: true, core10: false },
+          { name: "Сент-Винсент и Гренадины", lat: 13.25, lng: -61.2, iso3: "VCT", numCode: "670", capital: "Кингстаун", info: "Америка • Государство на о. Сент-Винсент и 32 островах архипелага Гренадины", dx: -62, dy: 22, micro: true, core10: false },
+          // Океания (12)
+          { name: "Новая Зеландия", lat: -41.5, lng: 173.0, iso3: "NZL", numCode: "554", capital: "Веллингтон", info: "Океания • Государство-архипелаг (Южный, Северный и ~700 прилегающих островов)", dx: -45, dy: -18, core10: true },
+          { name: "Фиджи", lat: -17.8, lng: 178.0, iso3: "FJI", numCode: "242", capital: "Сува", info: "Океания • Государство-архипелаг на 332 островах в Меланезии", dx: -42, dy: 16, micro: true, core10: true },
+          { name: "Соломоновы О-ва", lat: -9.4, lng: 160.0, iso3: "SLB", numCode: "090", capital: "Хониара", info: "Океания • Государство-архипелаг в Меланезии (992 острова)", dx: 48, dy: -12, micro: true, core10: false },
+          { name: "Вануату", lat: -16.5, lng: 168.0, iso3: "VUT", numCode: "548", capital: "Порт-Вила", info: "Океания • Государство на 83 островах архипелага Новые Гебриды", dx: -48, dy: 12, micro: true, core10: false },
+          { name: "Самоа", lat: -13.8, lng: 187.9, iso3: "WSM", numCode: "882", capital: "Апиа", info: "Океания • Государство в западной части архипелага Самоа в Полинезии", dx: 45, dy: -8, micro: true, core10: false },
+          { name: "Тонга", lat: -21.2, lng: 184.8, iso3: "TON", numCode: "776", capital: "Нукуалофа", info: "Океания • Королевство на 177 островах архипелага Тонга в Полинезии", dx: 45, dy: 14, micro: true, core10: false },
+          { name: "Кирибати", lat: 1.4, lng: 173.0, iso3: "KIR", numCode: "296", capital: "Южная Тарава", info: "Океания • Государство на 33 атоллах (о-ва Гилберта, Феникс, Лайн)", dx: 52, dy: 6, micro: true, core10: false },
+          { name: "ФШ Микронезии", lat: 6.9, lng: 158.2, iso3: "FSM", numCode: "583", capital: "Паликир", info: "Океания • Государство на 607 островах Каролинского архипелага", dx: 42, dy: -18, micro: true, core10: false },
+          { name: "Маршалловы О-ва", lat: 7.1, lng: 171.2, iso3: "MHL", numCode: "584", capital: "Маджуро", info: "Океания • Государство на 29 атоллах и 5 островах в Микронезии", dx: 52, dy: -12, micro: true, core10: false },
+          { name: "Палау", lat: 7.5, lng: 134.5, iso3: "PLW", numCode: "585", capital: "Нгерулмуд", info: "Океания • Государство-архипелаг из 328 островов в Филиппинском море", dx: 45, dy: -12, micro: true, core10: false },
+          { name: "Тувалу", lat: -8.5, lng: 179.2, iso3: "TUV", numCode: "798", capital: "Фунафути", info: "Океания • Государство на 9 атоллах и коралловых островах в Полинезии", dx: 48, dy: -6, micro: true, core10: false },
+          { name: "Сан-Томе и Принсипи", lat: 0.2, lng: 6.6, iso3: "STP", numCode: "678", capital: "Сан-Томе", info: "Африка • Островное государство-архипелаг из двух главных и 6 малых островов", dx: -58, dy: 14, micro: true, core10: false }
+        ]
+      },
+      lnd: {
+        id: 'lnd',
+        num: 5,
+        color: '#059669',
+        name: '5. Внутриконтинентальные',
+        shortLabel: 'Внутриконтинентальная',
+        items: [
+          // Европа (14)
+          { name: "Беларусь", lat: 53.7, lng: 28.0, iso3: "BLR", numCode: "112", capital: "Минск", info: "Европа • Крупнейшее внутриконтинентальное государство Европы", dx: 34, dy: -14, core10: true },
+          { name: "Чехия", lat: 49.8, lng: 15.5, iso3: "CZE", numCode: "203", capital: "Прага", info: "Европа • Внутриконтинентальное государство в Центральной Европе", dx: 28, dy: -18, core10: true },
+          { name: "Словакия", lat: 48.7, lng: 19.5, iso3: "SVK", numCode: "703", capital: "Братислава", info: "Европа • Внутриконтинентальное государство в Центральной Европе", dx: 45, dy: -10, core10: false },
+          { name: "Венгрия", lat: 47.2, lng: 19.4, iso3: "HUN", numCode: "348", capital: "Будапешт", info: "Европа • Внутриконтинентальное государство на Среднедунайской низменности", dx: 45, dy: 4, core10: false },
+          { name: "Австрия", lat: 47.6, lng: 14.2, iso3: "AUT", numCode: "040", capital: "Вена", info: "Европа • Альпийское внутриконтинентальное государство и федерация", dx: 38, dy: 12, core10: false },
+          { name: "Швейцария", lat: 46.8, lng: 8.2, iso3: "CHE", numCode: "756", capital: "Берн", info: "Европа • Альпийское внутриконтинентальное государство и федерация", dx: -48, dy: 14, core10: false },
+          { name: "Лихтенштейн", lat: 47.14, lng: 9.55, iso3: "LIE", numCode: "438", capital: "Вадуц", info: "Европа • Двойное внутриконтинентальное государство (граничит только с Австрией и Швейцарией)", dx: -38, dy: 22, micro: true, core10: false },
+          { name: "Люксембург", lat: 49.75, lng: 6.1, iso3: "LUX", numCode: "442", capital: "Люксембург", info: "Европа • Внутриконтинентальное Великое Герцогство в Западной Европе", dx: -65, dy: 2, micro: true, core10: false },
+          { name: "Андорра", lat: 42.55, lng: 1.55, iso3: "AND", numCode: "020", capital: "Андорра-ла-Велья", info: "Европа • Внутриконтинентальное княжество в Пиренеях", dx: -64, dy: -4, micro: true, core10: false },
+          { name: "Сан-Марино", lat: 43.94, lng: 12.46, iso3: "SMR", numCode: "674", capital: "Сан-Марино", info: "Европа • Внутриконтинентальное государство-анклав внутри Италии", dx: 42, dy: 18, micro: true, core10: false },
+          { name: "Ватикан", lat: 41.9, lng: 12.45, iso3: "VAT", numCode: "336", capital: "Ватикан", info: "Европа • Внутриконтинентальное государство-анклав внутри Рима", dx: -22, dy: 34, micro: true, core10: false },
+          { name: "Сербия", lat: 44.2, lng: 20.8, iso3: "SRB", numCode: "688", capital: "Белград", info: "Европа • Внутриконтинентальное государство на Балканском полуострове", dx: 48, dy: 14, core10: false },
+          { name: "Северная Македония", lat: 41.6, lng: 21.7, iso3: "MKD", numCode: "807", capital: "Скопье", info: "Европа • Внутриконтинентальное государство на Балканах", dx: 52, dy: 26, core10: false },
+          { name: "Молдова", lat: 47.2, lng: 28.5, iso3: "MDA", numCode: "498", capital: "Кишинёв", info: "Европа • Внутриконтинентальное государство на юго-востоке Европы", dx: 48, dy: -2, core10: false },
+          // Азия (12)
+          { name: "Казахстан", lat: 48.2, lng: 67.0, iso3: "KAZ", numCode: "398", capital: "Астана", info: "Евразия • Крупнейшее по площади внутриконтинентальное государство мира", dx: 0, dy: -16, core10: true },
+          { name: "Монголия", lat: 46.8, lng: 104.0, iso3: "MNG", numCode: "496", capital: "Улан-Батор", info: "Азия • Вторая по площади внутриконтинентальная страна мира", dx: 0, dy: -14, core10: true },
+          { name: "Узбекистан", lat: 41.5, lng: 64.0, iso3: "UZB", numCode: "860", capital: "Ташкент", info: "Азия • Двойное внутриконтинентальное государство (все соседи также не имеют выхода к океану)", dx: -42, dy: -6, core10: true },
+          { name: "Туркменистан", lat: 39.1, lng: 59.0, iso3: "TKM", numCode: "795", capital: "Ашхабад", info: "Азия • Внутриконтинентальное государство (выход только к закрытому Каспийскому морю)", dx: -48, dy: 8, core10: false },
+          { name: "Кыргызстан", lat: 41.5, lng: 74.5, iso3: "KGZ", numCode: "417", capital: "Бишкек", info: "Азия • Горное внутриконтинентальное государство на Тянь-Шане", dx: 45, dy: -12, core10: false },
+          { name: "Таджикистан", lat: 38.8, lng: 71.0, iso3: "TJK", numCode: "762", capital: "Душанбе", info: "Азия • Горное внутриконтинентальное государство (Памир)", dx: 45, dy: 4, core10: false },
+          { name: "Афганистан", lat: 33.8, lng: 65.5, iso3: "AFG", numCode: "004", capital: "Кабул", info: "Азия • Внутриконтинентальное государство на Среднем Востоке", dx: -35, dy: 14, core10: true },
+          { name: "Азербайджан", lat: 40.3, lng: 47.7, iso3: "AZE", numCode: "031", capital: "Баку", info: "Азия/Европа • Внутриконтинентальное государство Закавказья (у закрытого Каспийского моря)", dx: 45, dy: -10, core10: false },
+          { name: "Армения", lat: 40.2, lng: 44.8, iso3: "ARM", numCode: "051", capital: "Ереван", info: "Азия • Внутриконтинентальное государство в Закавказье", dx: -42, dy: -12, core10: false },
+          { name: "Непал", lat: 28.3, lng: 84.1, iso3: "NPL", numCode: "524", capital: "Катманду", info: "Азия • Внутриконтинентальное гималайское государство", dx: 0, dy: -20, core10: false },
+          { name: "Бутан", lat: 27.5, lng: 90.4, iso3: "BTN", numCode: "064", capital: "Тхимпху", info: "Азия • Внутриконтинентальное королевство в Гималаях", dx: 45, dy: -14, core10: false },
+          { name: "Лаос", lat: 18.4, lng: 103.5, iso3: "LAO", numCode: "418", capital: "Вьентьян", info: "Азия • Единственное внутриконтинентальное государство Юго-Восточной Азии", dx: 48, dy: -8, core10: false },
+          // Африка (16)
+          { name: "Мали", lat: 17.5, lng: -3.5, iso3: "MLI", numCode: "466", capital: "Бамако", info: "Африка • Крупное внутриконтинентальное государство в Западной Африке", dx: -42, dy: -12, core10: true },
+          { name: "Нигер", lat: 17.2, lng: 8.2, iso3: "NER", numCode: "562", capital: "Ниамей", info: "Африка • Внутриконтинентальное государство в Сахаре и Сахеле", dx: -10, dy: -16, core10: true },
+          { name: "Чад", lat: 15.2, lng: 18.8, iso3: "TCD", numCode: "148", capital: "Нджамена", info: "Африка • Крупное внутриконтинентальное государство в Центральной Африке", dx: 15, dy: -14, core10: true },
+          { name: "Буркина-Фасо", lat: 12.3, lng: -1.6, iso3: "BFA", numCode: "854", capital: "Уагадугу", info: "Африка • Внутриконтинентальное государство в Западной Африке", dx: -52, dy: 8, core10: false },
+          { name: "ЦАР", lat: 6.6, lng: 20.5, iso3: "CAF", numCode: "140", capital: "Банги", info: "Африка • Центральноафриканская Республика — внутриконтинентальное государство", dx: -25, dy: 12, core10: false },
+          { name: "Южный Судан", lat: 7.2, lng: 30.2, iso3: "SSD", numCode: "728", capital: "Джуба", info: "Африка • Внутриконтинентальное государство в Восточной Африке", dx: -22, dy: 16, core10: false },
+          { name: "Эфиопия", lat: 9.0, lng: 39.5, iso3: "ETH", numCode: "231", capital: "Аддис-Абеба", info: "Африка • Самое населённое внутриконтинентальное государство мира", dx: 42, dy: -10, core10: false },
+          { name: "Уганда", lat: 1.4, lng: 32.3, iso3: "UGA", numCode: "800", capital: "Кампала", info: "Африка • Внутриконтинентальное государство у озера Виктория", dx: 42, dy: -4, core10: false },
+          { name: "Руанда", lat: -1.9, lng: 29.9, iso3: "RWA", numCode: "646", capital: "Кигали", info: "Африка • Внутриконтинентальное государство в Восточной Африке", dx: -45, dy: -4, core10: false },
+          { name: "Бурунди", lat: -3.4, lng: 29.9, iso3: "BDI", numCode: "108", capital: "Гитега", info: "Африка • Внутриконтинентальное государство у озера Танганьика", dx: -45, dy: 10, core10: false },
+          { name: "Замбия", lat: -13.5, lng: 27.8, iso3: "ZMB", numCode: "894", capital: "Лусака", info: "Африка • Внутриконтинентальное государство в Южной Африке", dx: -42, dy: -6, core10: false },
+          { name: "Малави", lat: -13.5, lng: 34.3, iso3: "MWI", numCode: "454", capital: "Лилонгве", info: "Африка • Внутриконтинентальное государство у озера Ньяса", dx: 45, dy: -6, core10: false },
+          { name: "Зимбабве", lat: -19.0, lng: 29.5, iso3: "ZWE", numCode: "716", capital: "Хараре", info: "Африка • Внутриконтинентальное государство между реками Замбези и Лимпопо", dx: 45, dy: 4, core10: false },
+          { name: "Ботсвана", lat: -22.2, lng: 24.5, iso3: "BWA", numCode: "072", capital: "Габороне", info: "Африка • Внутриконтинентальное государство в Южной Африке (пустыня Калахари)", dx: -48, dy: 8, core10: false },
+          { name: "Эсватини", lat: -26.5, lng: 31.5, iso3: "SWZ", numCode: "748", capital: "Мбабане", info: "Африка • Внутриконтинентальное королевство на юге Африки", dx: 52, dy: 8, core10: false },
+          { name: "Лесото", lat: -29.6, lng: 28.2, iso3: "LSO", numCode: "426", capital: "Масеру", info: "Африка • Внутриконтинентальное королевство-анклав внутри ЮАР", dx: -42, dy: 24, core10: false },
+          // Южная Америка (2)
+          { name: "Боливия", lat: -16.5, lng: -64.5, iso3: "BOL", numCode: "068", capital: "Сукре (Ла-Пас)", info: "Южная Америка • Крупнейшее внутриконтинентальное государство Южной Америки", dx: -52, dy: -4, core10: true },
+          { name: "Парагвай", lat: -23.4, lng: -58.4, iso3: "PRY", numCode: "600", capital: "Асунсьон", info: "Южная Америка • Внутриконтинентальное государство в центре Южной Америки", dx: 45, dy: 12, core10: false }
+        ]
+      }
+    };
+
+    // Генерируем бицветные и трёхцветные SVG-паттерны штриховки для любых комбинаций категорий
+    function generateStripePatterns() {
+      const defs = document.getElementById('svg-patterns-defs');
+      defs.innerHTML = '';
+      const keys = Object.keys(categories);
+
+      // Пары категорий
+      for (let i = 0; i < keys.length; i++) {
+        for (let j = i + 1; j < keys.length; j++) {
+          const k1 = keys[i];
+          const k2 = keys[j];
+          const c1 = categories[k1].color;
+          const c2 = categories[k2].color;
+          const pat = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+          pat.setAttribute('id', `stripe-${k1}-${k2}`);
+          pat.setAttribute('patternUnits', 'userSpaceOnUse');
+          pat.setAttribute('width', '10');
+          pat.setAttribute('height', '10');
+          pat.setAttribute('patternTransform', 'rotate(45)');
+          pat.innerHTML = `
+            <rect width="5" height="10" fill="${c1}" fill-opacity="0.82"></rect>
+            <rect x="5" width="5" height="10" fill="${c2}" fill-opacity="0.82"></rect>
+          `;
+          defs.appendChild(pat);
+        }
+      }
+
+      // Тройки категорий (например, Сент-Китс и Невис или Коморы или Великобритания)
+      for (let i = 0; i < keys.length; i++) {
+        for (let j = i + 1; j < keys.length; j++) {
+          for (let m = j + 1; m < keys.length; m++) {
+            const k1 = keys[i], k2 = keys[j], k3 = keys[m];
+            const c1 = categories[k1].color, c2 = categories[k2].color, c3 = categories[k3].color;
+            const pat = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+            pat.setAttribute('id', `stripe-${k1}-${k2}-${k3}`);
+            pat.setAttribute('patternUnits', 'userSpaceOnUse');
+            pat.setAttribute('width', '12');
+            pat.setAttribute('height', '12');
+            pat.setAttribute('patternTransform', 'rotate(45)');
+            pat.innerHTML = `
+              <rect width="4" height="12" fill="${c1}" fill-opacity="0.84"></rect>
+              <rect x="4" width="4" height="12" fill="${c2}" fill-opacity="0.84"></rect>
+              <rect x="8" width="4" height="12" fill="${c3}" fill-opacity="0.84"></rect>
+            `;
+            defs.appendChild(pat);
+          }
+        }
+      }
+    }
+    generateStripePatterns();
+
+    // Глобальные состояния
+    let fullDatasetMode = true; // По умолчанию показываем ВСЕ страны во всех категориях!
+    let unifiedCountriesMap = new Map();
+    let unifiedCountries = [];
+
+    function getCategoryItems(catKey) {
+      const allItems = categories[catKey].items;
+      return fullDatasetMode ? allItems : allItems.filter(it => it.core10);
+    }
+
+    function rebuildUnifiedCountries() {
+      unifiedCountriesMap.clear();
+      Object.keys(categories).forEach(catKey => {
+        const items = getCategoryItems(catKey);
+        items.forEach((item, idx) => {
+          const key = item.numCode;
+          if (!unifiedCountriesMap.has(key)) {
+            unifiedCountriesMap.set(key, {
+              ...item,
+              cats: [catKey],
+              catOrder: { [catKey]: idx + 1 }
+            });
+          } else {
+            const existing = unifiedCountriesMap.get(key);
+            if (!existing.cats.includes(catKey)) {
+              existing.cats.push(catKey);
+              existing.catOrder[catKey] = idx + 1;
+            }
+          }
+        });
+      });
+      unifiedCountries = Array.from(unifiedCountriesMap.values());
+
+      // Обновляем счётчики на кнопках и в легенде
+      Object.keys(categories).forEach(catKey => {
+        const len = getCategoryItems(catKey).length;
+        const suffix = len % 10 === 1 && len % 100 !== 11 ? 'страна' : ([2,3,4].includes(len % 10) && ![12,13,14].includes(len % 100) ? 'страны' : 'стран');
+        const btnCount = document.getElementById(`count-${catKey}`);
+        const legCount = document.getElementById(`leg-count-${catKey}`);
+        if (btnCount) btnCount.textContent = `${len} ${suffix}`;
+        if (legCount) legCount.textContent = `${len} ${suffix}`;
+      });
+    }
+    rebuildUnifiedCountries();
+
+    let worldGeoJSON = null;
+    let baseCountriesLayer = null;
+    const markerLayerGroup = L.layerGroup().addTo(map);
+    const haloLayerGroup = L.layerGroup().addTo(map);
+
+    let currentCategory = 'all';
+    let allLabelsEnabled = true;
+    let smartSpreadEnabled = true;
+    let paperModeEnabled = false;
+    let labelSizeSetting = 'auto'; // 'auto' | 'sm' | 'md' | 'lg'
+    let selectedCountryCode = null;
+    let hoveredCountryCode = null;
+
+    const groupLabelVisibility = {
+      mon: true,
+      fed: true,
+      isl: true,
+      arc: true,
+      lnd: true
+    };
+
+    const userLabelOffsets = new Map();
+
+    // Полное и математически точное устранение горизонтальной полосы через карту (Россия/Чукотка, Фиджи, Новая Зеландия, Кирибати, Тонга, Самоа, Аляска)
+    function sanitizeWorldGeoJSON(geojson) {
+      // Коды стран Восточного полушария и Океании, чьи части за 180° меридианом должны лежать справа от Евразии/Австралии (+180°..+195°)
+      const easternTransMeridianCodes = new Set(['643', '242', '554', '296', '798', '776', '882']);
+
+      function unwrapRing(ring, forceEastern) {
+        if (!ring || ring.length === 0) return [];
+        const unwrapped = [];
+        let prevLon = ring[0][0];
+        let prevLat = Math.max(-84.2, Math.min(84.2, ring[0][1]));
+        unwrapped.push([prevLon, prevLat]);
+
+        let sumLon = prevLon;
+        for (let i = 1; i < ring.length; i++) {
+          let lon = ring[i][0];
+          const lat = Math.max(-84.2, Math.min(84.2, ring[i][1]));
+          while (lon - prevLon > 180) lon -= 360;
+          while (lon - prevLon < -180) lon += 360;
+          unwrapped.push([lon, lat]);
+          prevLon = lon;
+          sumLon += lon;
+        }
+
+        let avgLon = sumLon / unwrapped.length;
+        let shift = 0;
+        while (avgLon + shift < -180) shift += 360;
+        while (avgLon + shift > 180) shift -= 360;
+
+        // Для России (Чукотка, о. Врангеля), Фиджи, Новой Зеландии, Тонга, Самоа — удерживаем все острова на восточной стороне (+180°..+195°), чтобы они не прыгали на левый край карты
+        if (forceEastern && (avgLon + shift) < 0) {
+          shift += 360;
+        }
+
+        if (shift !== 0) {
+          for (let i = 0; i < unwrapped.length; i++) {
+            unwrapped[i][0] += shift;
+          }
+        }
+
+        // Проверка замыкания кольца: если между последней и первой точкой скачок > 90° (например, незамкнутая полярная дуга), отбрасываем такое битое кольцо
+        const closeDiff = Math.abs(unwrapped[unwrapped.length - 1][0] - unwrapped[0][0]);
+        if (closeDiff > 90) {
+          return null;
+        }
+
+        return unwrapped;
+      }
+
+      // Удаляем Антарктиду (id "010")
+      geojson.features = geojson.features.filter(f => String(f.id).padStart(3, '0') !== '010');
+
+      geojson.features.forEach(f => {
+        if (!f.geometry) return;
+        const code = String(f.id).padStart(3, '0');
+        const forceEastern = easternTransMeridianCodes.has(code);
+
+        if (f.geometry.type === 'Polygon') {
+          const cleanRings = [];
+          f.geometry.coordinates.forEach(ring => {
+            const fixed = unwrapRing(ring, forceEastern);
+            if (fixed && fixed.length >= 4) cleanRings.push(fixed);
+          });
+          f.geometry.coordinates = cleanRings;
+        } else if (f.geometry.type === 'MultiPolygon') {
+          const cleanPolys = [];
+          f.geometry.coordinates.forEach(poly => {
+            const cleanRings = [];
+            poly.forEach(ring => {
+              const fixed = unwrapRing(ring, forceEastern);
+              if (fixed && fixed.length >= 4) cleanRings.push(fixed);
+            });
+            if (cleanRings.length > 0) cleanPolys.push(cleanRings);
+          });
+          f.geometry.coordinates = cleanPolys;
+        }
+      });
+
+      return geojson;
+    }
+
+    // Загружаем контуры стран мира
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
+      .then(r => r.json())
+      .then(topology => {
+        const rawGeo = topojson.feature(topology, topology.objects.countries);
+        worldGeoJSON = sanitizeWorldGeoJSON(rawGeo);
+        updateStatusBar();
+        drawVectorMap();
+        renderMarkersAndLabels();
+      })
+      .catch(() => {
+        const statusBar = document.getElementById('status-bar');
+        statusBar.className = 'mt-1.5 flex items-center gap-2 text-[11px] text-amber-400 font-semibold';
+        statusBar.innerHTML = '<span>⚠️ Векторные границы недоступны, работаем в режиме маркеров и подписей</span>';
+        renderMarkersAndLabels();
+      });
+
+    function updateStatusBar() {
+      const statusBar = document.getElementById('status-bar');
+      statusBar.className = 'mt-1.5 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold';
+      statusBar.innerHTML = `<span>✓ Контурная карта готова (${unifiedCountries.length} уник. стран в 5 заданиях)</span>`;
+    }
+
+    function getCountryFillStyle(country) {
+      if (!country) {
+        return {
+          fillColor: paperModeEnabled ? '#ffffff' : '#f8fafc',
+          fillOpacity: paperModeEnabled ? 0.92 : 0.8,
+          color: paperModeEnabled ? '#475569' : '#64748b',
+          weight: 0.75
+        };
+      }
+
+      const isSelected = selectedCountryCode === country.numCode || hoveredCountryCode === country.numCode;
+
+      if (currentCategory !== 'all') {
+        if (!country.cats.includes(currentCategory)) {
+          return {
+            fillColor: paperModeEnabled ? '#ffffff' : '#f8fafc',
+            fillOpacity: paperModeEnabled ? 0.92 : 0.8,
+            color: paperModeEnabled ? '#64748b' : '#94a3b8',
+            weight: 0.65
+          };
+        }
+        return {
+          fillColor: categories[currentCategory].color,
+          fillOpacity: isSelected ? 0.92 : 0.78,
+          color: isSelected ? '#020617' : '#0f172a',
+          weight: isSelected ? 2.4 : 1.3
+        };
+      }
+
+      // В режиме «Все категории сразу» используем бицветную/трёхцветную штриховку для стран из нескольких заданий
+      let fillValue = categories[country.cats[0]].color;
+      if (country.cats.length >= 3) {
+        const patId = `stripe-${country.cats[0]}-${country.cats[1]}-${country.cats[2]}`;
+        if (document.getElementById(patId)) fillValue = `url(#${patId})`;
+      } else if (country.cats.length === 2) {
+        const patId = `stripe-${country.cats[0]}-${country.cats[1]}`;
+        if (document.getElementById(patId)) fillValue = `url(#${patId})`;
+      }
+
+      return {
+        fillColor: fillValue,
+        fillOpacity: isSelected ? 0.94 : 0.8,
+        color: isSelected ? '#020617' : '#0f172a',
+        weight: isSelected ? 2.4 : 1.2
+      };
+    }
+
+    function drawVectorMap() {
+      if (!worldGeoJSON) return;
+      if (baseCountriesLayer) map.removeLayer(baseCountriesLayer);
+
+      const countryByCode = {};
+      unifiedCountries.forEach(c => {
+        countryByCode[c.numCode] = c;
+        if (c.altCode) countryByCode[c.altCode] = c;
+      });
+
+      baseCountriesLayer = L.geoJSON(worldGeoJSON, {
+        style: feature => {
+          const code = String(feature.id).padStart(3, '0');
+          const c = countryByCode[code] || countryByCode[String(feature.id)];
+          return getCountryFillStyle(c);
+        },
+        onEachFeature: (feature, layer) => {
+          const code = String(feature.id).padStart(3, '0');
+          const c = countryByCode[code] || countryByCode[String(feature.id)];
+          if (c) {
+            layer.on('mouseover', () => highlightCountry(c.numCode, true));
+            layer.on('mouseout', () => highlightCountry(c.numCode, false));
+            layer.on('click', () => focusCountry(c.numCode, false));
+          }
+        }
+      }).addTo(map);
+
+      baseCountriesLayer.bringToBack();
+    }
+
+    function getActiveCountries() {
+      if (currentCategory === 'all') {
+        return unifiedCountries;
+      }
+      return getCategoryItems(currentCategory).map((item, idx) => {
+        const unified = unifiedCountriesMap.get(item.numCode);
+        return {
+          ...unified,
+          displayOrder: idx + 1
+        };
+      });
+    }
+
+    function isCountryLabelVisible(country) {
+      if (!allLabelsEnabled) return false;
+      if (currentCategory !== 'all') {
+        return groupLabelVisibility[currentCategory];
+      }
+      return country.cats.some(catKey => groupLabelVisibility[catKey]);
+    }
+
+    function renderMarkersAndLabels() {
+      markerLayerGroup.clearLayers();
+      haloLayerGroup.clearLayers();
+
+      const activeList = getActiveCountries();
+
+      activeList.forEach(country => {
+        const primaryCat = currentCategory === 'all' ? country.cats[0] : currentCategory;
+        const primaryColor = categories[primaryCat].color;
+        const secondaryCat = currentCategory === 'all' && country.cats.length > 1 ? country.cats[1] : null;
+        const secondaryColor = secondaryCat ? categories[secondaryCat].color : '#ffffff';
+
+        if (country.micro) {
+          L.circleMarker([country.lat, country.lng], {
+            radius: 10,
+            fillColor: primaryColor,
+            fillOpacity: 0.2,
+            color: primaryColor,
+            weight: 1.3,
+            dashArray: '3,3',
+            interactive: false
+          }).addTo(haloLayerGroup);
+        }
+
+        const marker = L.circleMarker([country.lat, country.lng], {
+          radius: 5,
+          fillColor: primaryColor,
+          color: secondaryCat ? secondaryColor : '#ffffff',
+          weight: secondaryCat ? 2.3 : 1.6,
+          fillOpacity: 1
+        });
+
+        marker.on('mouseover', () => highlightCountry(country.numCode, true));
+        marker.on('mouseout', () => highlightCountry(country.numCode, false));
+        marker.on('click', () => focusCountry(country.numCode, false));
+
+        marker.addTo(markerLayerGroup);
+      });
+
+      updateSmartLabelsLayout();
+    }
+
+    let labelNodesMap = new Map();
+
+    function getEffectiveLabelSizeClass() {
+      if (labelSizeSetting !== 'auto') return `size-${labelSizeSetting}`;
+      const zoom = map.getZoom();
+      const count = getActiveCountries().length;
+      if (zoom < 3.1 && count > 45) return 'size-sm';
+      if (zoom >= 4.2) return 'size-lg';
+      return 'size-md';
+    }
+
+    function rebuildLabelDOM() {
+      const container = document.getElementById('labels-container');
+      container.innerHTML = '';
+      labelNodesMap.clear();
+
+      const activeList = getActiveCountries();
+      const sizeClass = getEffectiveLabelSizeClass();
+
+      activeList.forEach(country => {
+        if (!isCountryLabelVisible(country)) return;
+
+        const el = document.createElement('div');
+        el.className = `smart-label ${sizeClass}` + (paperModeEnabled ? ' paper-theme' : '');
+        if (selectedCountryCode === country.numCode || hoveredCountryCode === country.numCode) {
+          el.classList.add('highlighted');
+        }
+
+        const catsToShow = currentCategory === 'all' ? country.cats : [currentCategory];
+        catsToShow.forEach(cKey => {
+          const dot = document.createElement('span');
+          dot.className = 'label-dot';
+          dot.style.backgroundColor = categories[cKey].color;
+          el.appendChild(dot);
+        });
+
+        if (currentCategory !== 'all' && country.catOrder[currentCategory]) {
+          const numSpan = document.createElement('span');
+          numSpan.className = 'label-num';
+          numSpan.textContent = `${country.catOrder[currentCategory]}.`;
+          el.appendChild(numSpan);
+        }
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = country.name;
+        el.appendChild(nameSpan);
+
+        el.addEventListener('mouseenter', () => highlightCountry(country.numCode, true));
+        el.addEventListener('mouseleave', () => highlightCountry(country.numCode, false));
+
+        setupLabelDragAndClick(el, country);
+
+        container.appendChild(el);
+        labelNodesMap.set(country.numCode, { el, country });
+      });
+    }
+
+    function setupLabelDragAndClick(el, country) {
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let initialLeft = 0;
+      let initialTop = 0;
+
+      el.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        isDragging = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        initialLeft = parseFloat(el.style.left) || 0;
+        initialTop = parseFloat(el.style.top) || 0;
+        el.setPointerCapture(e.pointerId);
+
+        const onMove = moveEvt => {
+          const dx = moveEvt.clientX - startX;
+          const dy = moveEvt.clientY - startY;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            isDragging = true;
+          }
+          if (isDragging) {
+            const newX = initialLeft + dx;
+            const newY = initialTop + dy;
+            el.style.left = `${newX}px`;
+            el.style.top = `${newY}px`;
+            const anchorPt = map.latLngToContainerPoint([country.lat, country.lng]);
+            userLabelOffsets.set(country.numCode, {
+              dx: newX - anchorPt.x,
+              dy: newY - anchorPt.y
+            });
+            drawLeaderLinesOnly();
+          }
+        };
+
+        const onUp = upEvt => {
+          el.releasePointerCapture(upEvt.pointerId);
+          el.removeEventListener('pointermove', onMove);
+          el.removeEventListener('pointerup', onUp);
+          if (!isDragging) {
+            focusCountry(country.numCode, true);
+          }
+        };
+
+        el.addEventListener('pointermove', onMove);
+        el.addEventListener('pointerup', onUp);
+      });
+    }
+
+    function updateSmartLabelsLayout() {
+      rebuildLabelDOM();
+
+      const mapSize = map.getSize();
+      const zoom = map.getZoom();
+      const items = [];
+
+      const spreadFactor = smartSpreadEnabled ? Math.max(0.55, Math.min(1.3, 2.9 / zoom)) : 0;
+
+      labelNodesMap.forEach(({ el, country }) => {
+        const anchor = map.latLngToContainerPoint([country.lat, country.lng]);
+        const rect = el.getBoundingClientRect();
+        const w = Math.max(42, rect.width || country.name.length * 6.2 + 18);
+        const h = Math.max(16, rect.height || 18);
+
+        const userOffset = userLabelOffsets.get(country.numCode);
+        let targetX = anchor.x + (userOffset ? userOffset.dx : (country.dx || 0) * spreadFactor);
+        let targetY = anchor.y + (userOffset ? userOffset.dy : (country.dy || -14) * spreadFactor);
+
+        items.push({
+          code: country.numCode,
+          el,
+          country,
+          anchorX: anchor.x,
+          anchorY: anchor.y,
+          x: targetX,
+          y: targetY,
+          targetX,
+          targetY,
+          w,
+          h,
+          locked: Boolean(userOffset)
+        });
+      });
+
+      // Улучшенный итеративный алгоритм разведения подписей без обратного схлопывания
+      if (smartSpreadEnabled && items.length > 1) {
+        const totalIterations = 60;
+        const padX = 4;
+        const padY = 2.5;
+
+        for (let iter = 0; iter < totalIterations; iter++) {
+          let anyOverlap = false;
+          for (let i = 0; i < items.length; i++) {
+            for (let j = i + 1; j < items.length; j++) {
+              const a = items[i];
+              const b = items[j];
+
+              let dx = b.x - a.x;
+              let dy = b.y - a.y;
+              if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+                dx = (i % 2 === 0 ? 1 : -1) * 0.5;
+                dy = (j % 2 === 0 ? 1 : -1) * 0.5;
+              }
+
+              const minDistX = (a.w + b.w) / 2 + padX;
+              const minDistY = (a.h + b.h) / 2 + padY;
+
+              if (Math.abs(dx) < minDistX && Math.abs(dy) < minDistY) {
+                anyOverlap = true;
+                const overlapX = minDistX - Math.abs(dx);
+                const overlapY = minDistY - Math.abs(dy);
+
+                if (overlapY * 1.2 < overlapX) {
+                  const signY = dy >= 0 ? 1 : -1;
+                  const shiftY = overlapY * 0.54 * signY;
+                  if (!a.locked && !b.locked) {
+                    a.y -= shiftY;
+                    b.y += shiftY;
+                  } else if (!a.locked) {
+                    a.y -= shiftY * 2;
+                  } else if (!b.locked) {
+                    b.y += shiftY * 2;
+                  }
+                } else {
+                  const signX = dx >= 0 ? 1 : -1;
+                  const shiftX = overlapX * 0.54 * signX;
+                  if (!a.locked && !b.locked) {
+                    a.x -= shiftX;
+                    b.x += shiftX;
+                  } else if (!a.locked) {
+                    a.x -= shiftX * 2;
+                  } else if (!b.locked) {
+                    b.x += shiftX * 2;
+                  }
+                }
+              }
+            }
+          }
+
+          // Притяжение к начальной точке действует только в первой половине итераций, чтобы финальные шаги гарантировали отсутствие наложений
+          const pullStrength = iter < 32 ? 0.05 : 0;
+          for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            if (!it.locked) {
+              if (pullStrength > 0) {
+                it.x += (it.targetX - it.x) * pullStrength;
+                it.y += (it.targetY - it.y) * pullStrength;
+              }
+              it.x = Math.max(it.w / 2 + 5, Math.min(mapSize.x - it.w / 2 - 5, it.x));
+              it.y = Math.max(it.h / 2 + 5, Math.min(mapSize.y - it.h / 2 - 5, it.y));
+            }
+          }
+
+          if (!anyOverlap && iter > 15) break;
+        }
+      }
+
+      items.forEach(it => {
+        it.el.style.left = `${it.x.toFixed(1)}px`;
+        it.el.style.top = `${it.y.toFixed(1)}px`;
+      });
+
+      drawLeaderLinesOnly();
+    }
+
+    function drawLeaderLinesOnly() {
+      const group = document.getElementById('callout-lines-group');
+      group.innerHTML = '';
+
+      labelNodesMap.forEach(({ el, country }) => {
+        const anchor = map.latLngToContainerPoint([country.lat, country.lng]);
+        const x = parseFloat(el.style.left) || anchor.x;
+        const y = parseFloat(el.style.top) || anchor.y;
+
+        const dist = Math.hypot(x - anchor.x, y - anchor.y);
+        if (dist < 8) return;
+
+        const primaryCat = currentCategory === 'all' ? country.cats[0] : currentCategory;
+        const lineColor = categories[primaryCat].color;
+        const isHighlighted = selectedCountryCode === country.numCode || hoveredCountryCode === country.numCode;
+
+        const haloLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        haloLine.setAttribute('x1', anchor.x.toFixed(1));
+        haloLine.setAttribute('y1', anchor.y.toFixed(1));
+        haloLine.setAttribute('x2', x.toFixed(1));
+        haloLine.setAttribute('y2', y.toFixed(1));
+        haloLine.setAttribute('stroke', paperModeEnabled ? '#ffffff' : '#0f172a');
+        haloLine.setAttribute('stroke-width', isHighlighted ? '3.4' : '2.1');
+        haloLine.setAttribute('stroke-opacity', '0.72');
+        group.appendChild(haloLine);
+
+        const mainLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        mainLine.setAttribute('x1', anchor.x.toFixed(1));
+        mainLine.setAttribute('y1', anchor.y.toFixed(1));
+        mainLine.setAttribute('x2', x.toFixed(1));
+        mainLine.setAttribute('y2', y.toFixed(1));
+        mainLine.setAttribute('stroke', isHighlighted ? '#38bdf8' : lineColor);
+        mainLine.setAttribute('stroke-width', isHighlighted ? '2.1' : '1.2');
+        group.appendChild(mainLine);
+      });
+    }
+
+    map.on('move zoom viewreset resize', () => {
+      updateSmartLabelsLayout();
+    });
+
+    function selectCategory(catKey) {
+      currentCategory = catKey;
+
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.remove('border-white', 'ring-2', 'ring-sky-400');
+        btn.classList.add('border-transparent');
+      });
+      const activeBtn = document.getElementById(`btn-${catKey}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-transparent');
+        activeBtn.classList.add('border-white', 'ring-2', 'ring-sky-400');
+      }
+
+      if (catKey !== 'all') {
+        groupLabelVisibility[catKey] = true;
+        updateGroupToggleButtonsUI();
+      }
+
+      updateActiveCountBadge();
+      drawVectorMap();
+      renderMarkersAndLabels();
+      renderCountryList();
+    }
+
+    function updateActiveCountBadge() {
+      const len = getActiveCountries().length;
+      const suffix = len % 10 === 1 && len % 100 !== 11 ? 'страна' : ([2,3,4].includes(len % 10) && ![12,13,14].includes(len % 100) ? 'страны' : 'стран');
+      document.getElementById('active-count-badge').textContent = `${len} ${suffix}`;
+    }
+
+    // Переключение между Полным списком всех стран мира и Кратким списком (по 10 примеров для заданий 3–5)
+    function toggleDatasetMode() {
+      fullDatasetMode = !fullDatasetMode;
+      const btn = document.getElementById('btn-list-mode');
+      if (fullDatasetMode) {
+        btn.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition';
+        btn.textContent = '✓ Все страны мира';
+      } else {
+        btn.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition';
+        btn.textContent = 'По 10 примеров (3–5)';
+      }
+      rebuildUnifiedCountries();
+      updateStatusBar();
+      updateActiveCountBadge();
+      drawVectorMap();
+      renderMarkersAndLabels();
+      renderCountryList();
+    }
+
+    // Переключение размера подписей (Авто / Мелкий / Средний / Крупный)
+    function cycleLabelSize() {
+      const order = ['auto', 'sm', 'md', 'lg'];
+      const names = { auto: 'Авто', sm: 'Мелкий', md: 'Средний', lg: 'Крупный' };
+      const nextIdx = (order.indexOf(labelSizeSetting) + 1) % order.length;
+      labelSizeSetting = order[nextIdx];
+      document.getElementById('btn-label-size').textContent = `🔤 Размер: ${names[labelSizeSetting]}`;
+      updateSmartLabelsLayout();
+    }
+
+    // Быстрый переход по регионам мира
+    function flyToRegion(region) {
+      const views = {
+        world: { center: [22, 18], zoom: 2.35 },
+        europe: { center: [49.5, 13.5], zoom: 4.5 },
+        asia: { center: [28.0, 88.0], zoom: 3.5 },
+        africa: { center: [2.0, 21.0], zoom: 3.5 },
+        caribbean: { center: [17.5, -69.5], zoom: 4.75 },
+        oceania: { center: [-12.0, 165.0], zoom: 3.75 }
+      };
+      const v = views[region] || views.world;
+      map.flyTo(v.center, v.zoom, { duration: 0.65 });
+    }
+
+    function highlightCountry(numCode, isHover) {
+      hoveredCountryCode = isHover ? numCode : null;
+      const node = labelNodesMap.get(numCode);
+      if (node) {
+        node.el.classList.toggle('highlighted', isHover || selectedCountryCode === numCode);
+      }
+      drawLeaderLinesOnly();
+    }
+
+    function focusCountry(numCode, zoomIn = true) {
+      selectedCountryCode = numCode;
+      const country = unifiedCountriesMap.get(numCode);
+      if (!country) return;
+
+      showCountryInfoCard(country);
+      drawVectorMap();
+      updateSmartLabelsLayout();
+
+      if (zoomIn) {
+        const targetZoom = country.micro ? 5.5 : 4.25;
+        map.flyTo([country.lat, country.lng], Math.max(map.getZoom(), targetZoom), {
+          duration: 0.6
+        });
+      }
+    }
+
+    function showCountryInfoCard(country) {
+      const card = document.getElementById('country-info-card');
+      const titleEl = document.getElementById('info-title');
+      const badgesEl = document.getElementById('info-badges');
+      const detailsEl = document.getElementById('info-details');
+
+      card.classList.remove('hidden');
+      titleEl.textContent = `${country.name} (столица: ${country.capital})`;
+      badgesEl.innerHTML = '';
+
+      country.cats.forEach(cKey => {
+        const badge = document.createElement('span');
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold text-white';
+        badge.style.backgroundColor = categories[cKey].color;
+        badge.textContent = `${categories[cKey].num}. ${categories[cKey].shortLabel} (№${country.catOrder[cKey]})`;
+        badgesEl.appendChild(badge);
+      });
+
+      detailsEl.textContent = country.info;
+    }
+
+    function closeInfoCard() {
+      selectedCountryCode = null;
+      document.getElementById('country-info-card').classList.add('hidden');
+      drawVectorMap();
+      updateSmartLabelsLayout();
+    }
+
+    function renderCountryList() {
+      const box = document.getElementById('list-box');
+      const query = (document.getElementById('search-input').value || '').trim().toLowerCase();
+      box.innerHTML = '';
+
+      const catKeys = currentCategory === 'all' ? Object.keys(categories) : [currentCategory];
+
+      catKeys.forEach(catKey => {
+        const group = categories[catKey];
+        const items = getCategoryItems(catKey);
+        const filteredItems = items
+          .map((item, idx) => ({ ...item, order: idx + 1 }))
+          .filter(item =>
+            !query ||
+            item.name.toLowerCase().includes(query) ||
+            item.capital.toLowerCase().includes(query) ||
+            item.info.toLowerCase().includes(query)
+          );
+
+        if (filteredItems.length === 0) return;
+
+        if (currentCategory === 'all') {
+          const header = document.createElement('div');
+          header.className = 'sticky top-0 z-10 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded bg-slate-950/95 text-slate-300 border-l-4 mt-1 flex items-center justify-between';
+          header.style.borderLeftColor = group.color;
+          header.innerHTML = `<span>${group.name}</span><span class="text-[10px] text-slate-400">${filteredItems.length}</span>`;
+          box.appendChild(header);
+        }
+
+        filteredItems.forEach(item => {
+          const unified = unifiedCountriesMap.get(item.numCode);
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-950/50 hover:bg-slate-800 cursor-pointer border border-slate-800/70 transition text-xs';
+
+          const left = document.createElement('div');
+          left.className = 'flex items-center gap-2 min-w-0';
+
+          const dot = document.createElement('span');
+          dot.className = 'w-2.5 h-2.5 rounded-sm shrink-0';
+          dot.style.backgroundColor = group.color;
+          left.appendChild(dot);
+
+          const text = document.createElement('div');
+          text.className = 'truncate';
+          text.innerHTML = `<span class="font-bold text-slate-100">${item.order}. ${item.name}</span> <span class="text-slate-400 text-[11px]">• ${item.capital}</span>`;
+          left.appendChild(text);
+
+          row.appendChild(left);
+
+          if (unified && unified.cats.length > 1) {
+            const multiTag = document.createElement('span');
+            multiTag.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 shrink-0 ml-1';
+            multiTag.textContent = unified.cats.map(k => categories[k].num).join('+');
+            multiTag.title = 'Государство входит сразу в несколько категорий';
+            row.appendChild(multiTag);
+          }
+
+          row.addEventListener('mouseenter', () => highlightCountry(item.numCode, true));
+          row.addEventListener('mouseleave', () => highlightCountry(item.numCode, false));
+          row.addEventListener('click', () => focusCountry(item.numCode, true));
+
+          box.appendChild(row);
+        });
+      });
+    }
+
+    function toggleAllLabels() {
+      allLabelsEnabled = !allLabelsEnabled;
+      const btn = document.getElementById('btn-toggle-all-labels');
+      if (allLabelsEnabled) {
+        Object.keys(groupLabelVisibility).forEach(k => { groupLabelVisibility[k] = true; });
+        btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white transition flex items-center justify-center gap-1.5';
+        btn.innerHTML = '<span>👁️ Подписи: ВКЛ</span>';
+      } else {
+        btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center justify-center gap-1.5';
+        btn.innerHTML = '<span>👁️ Подписи: ВЫКЛ</span>';
+      }
+      updateGroupToggleButtonsUI();
+      updateSmartLabelsLayout();
+    }
+
+    function toggleGroupLabels(catKey) {
+      allLabelsEnabled = true;
+      groupLabelVisibility[catKey] = !groupLabelVisibility[catKey];
+      updateGroupToggleButtonsUI();
+      updateSmartLabelsLayout();
+    }
+
+    function presetLabelsOnlyGeo() {
+      allLabelsEnabled = true;
+      groupLabelVisibility.mon = false;
+      groupLabelVisibility.fed = false;
+      groupLabelVisibility.isl = true;
+      groupLabelVisibility.arc = true;
+      groupLabelVisibility.lnd = true;
+      updateGroupToggleButtonsUI();
+      updateSmartLabelsLayout();
+    }
+
+    function updateGroupToggleButtonsUI() {
+      Object.keys(groupLabelVisibility).forEach(k => {
+        const btn = document.getElementById(`lbl-toggle-${k}`);
+        if (!btn) return;
+        const active = allLabelsEnabled && groupLabelVisibility[k];
+        btn.style.opacity = active ? '1' : '0.35';
+        btn.style.borderColor = active ? categories[k].color : '#334155';
+      });
+    }
+
+    function toggleSmartSpread() {
+      smartSpreadEnabled = !smartSpreadEnabled;
+      const btn = document.getElementById('btn-spread-labels');
+      if (smartSpreadEnabled) {
+        btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center justify-center gap-1.5';
+        btn.innerHTML = '<span>📐 Выноски: ВКЛ</span>';
+      } else {
+        btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center justify-center gap-1.5';
+        btn.innerHTML = '<span>📐 Выноски: ВЫКЛ</span>';
+      }
+      updateSmartLabelsLayout();
+    }
+
+    function togglePaperMode() {
+      paperModeEnabled = !paperModeEnabled;
+      const mapEl = document.getElementById('map');
+      const btn = document.getElementById('btn-paper-mode');
+      mapEl.classList.toggle('paper-mode', paperModeEnabled);
+      tileLayer.setOpacity(paperModeEnabled ? 0.2 : 0.45);
+      btn.textContent = paperModeEnabled ? '🌙 Тёмные плашки' : '📄 Светлый стиль';
+      drawVectorMap();
+      updateSmartLabelsLayout();
+    }
+
+    function resetDraggedLabels() {
+      userLabelOffsets.clear();
+      updateSmartLabelsLayout();
+    }
+
+    function resetMapView() {
+      flyToRegion('world');
+    }
+
+    let sidebarCollapsed = false;
+    function toggleSidebar() {
+      sidebarCollapsed = !sidebarCollapsed;
+      const sidebar = document.getElementById('sidebar');
+      const btn = document.getElementById('btn-sidebar-toggle');
+      if (sidebarCollapsed) {
+        sidebar.classList.add('hidden');
+        btn.innerHTML = '<span>▶ Показать панель</span>';
+      } else {
+        sidebar.classList.remove('hidden');
+        btn.innerHTML = '<span>◀ Скрыть панель</span>';
+      }
+      setTimeout(() => {
+        map.invalidateSize();
+        updateSmartLabelsLayout();
+      }, 200);
+    }
+
+    let legendCollapsed = false;
+    function toggleLegendCollapse() {
+      legendCollapsed = !legendCollapsed;
+      const body = document.getElementById('legend-body');
+      const btn = document.getElementById('legend-collapse-btn');
+      body.classList.toggle('hidden', legendCollapsed);
+      btn.textContent = legendCollapsed ? 'Развернуть' : 'Свернуть';
+    }
+
+    // Первичная инициализация
+    updateGroupToggleButtonsUI();
+    updateActiveCountBadge();
+    renderCountryList();
+    renderMarkersAndLabels();
+  </script>
+</body>
+</html>
