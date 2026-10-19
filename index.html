@@ -222,6 +222,9 @@
       overflow: hidden;
       backdrop-filter: blur(16px);
     }
+    .leaflet-control-attribution {
+      display: none !important;
+    }
     .leaflet-control-zoom a {
       background: rgba(10, 15, 29, 0.88) !important;
       color: #f8fafc !important;
@@ -1177,12 +1180,12 @@
       maxBounds: [[-85, -220], [85, 220]],
       maxBoundsViscosity: 0.9,
       preferCanvas: false,
-      zoomAnimation: true
+      zoomAnimation: true,
+      attributionControl: false
     });
 
     // Подложка карты (Esri Light Gray Base)
     const tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Политическая карта мира 2026 • Полные официальные названия',
       noWrap: true,
       bounds: [[-85, -180], [85, 180]],
       opacity: 0.45
