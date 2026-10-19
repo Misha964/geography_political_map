@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Политическая карта мира 2026 — Официальные названия государств (6 заданий)</title>
+  <title>Политическая карта мира 2026 — Официальные названия государств и Тренажёр</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -18,6 +18,11 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    input, textarea {
+      user-select: text !important;
+      -webkit-user-select: text !important;
     }
 
     html, body {
@@ -75,11 +80,28 @@
       z-index: 650;
       transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
                   width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-                  height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+                  height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+                  opacity 0.25s ease;
     }
 
     #sidebar.dragging-sheet {
       transition: none !important;
+    }
+
+    /* Скрытие боковой панели/шторки во время активного тренажёра */
+    body.trainer-active #sidebar {
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    @media (min-width: 1024px) {
+      body.trainer-active:not(.force-mobile) #sidebar {
+        width: 0 !important;
+        min-width: 0 !important;
+        border-right: none;
+        overflow: hidden;
+        transform: translateX(-100%);
+      }
     }
 
     /* Десктопный режим (>= 1024px) */
@@ -161,6 +183,12 @@
       display: flex !important;
     }
 
+    body.trainer-active #desktop-top-hud,
+    body.trainer-active #mobile-top-hud {
+      opacity: 0;
+      pointer-events: none;
+    }
+
     #map-wrapper {
       position: relative;
       flex: 1;
@@ -218,11 +246,17 @@
         bottom: 92px !important;
         left: 12px !important;
       }
+      body.trainer-active .leaflet-top.leaflet-left {
+        bottom: 24px !important;
+      }
     }
     body.force-mobile .leaflet-top.leaflet-left {
       top: auto !important;
       bottom: 92px !important;
       left: 12px !important;
+    }
+    body.force-mobile.trainer-active .leaflet-top.leaflet-left {
+      bottom: 24px !important;
     }
 
     /* Слой SVG для коротких аккуратных выносок */
@@ -248,6 +282,12 @@
       pointer-events: none;
       z-index: 430;
       overflow: hidden;
+    }
+
+    body.trainer-active #labels-container,
+    body.trainer-active #callout-svg {
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
 
     /* Современная плашка подписи страны 2026 (GPU-ускоренная, без скачков и нитей) */
@@ -339,18 +379,18 @@
 
     /* Плавность интерактивных полигонов */
     .leaflet-interactive {
-      transition: fill-opacity 0.2s ease, stroke-width 0.2s ease;
+      transition: fill-opacity 0.2s ease, stroke-width 0.2s ease, fill 0.2s ease;
       stroke-linejoin: round;
       stroke-linecap: round;
     }
 
     /* Стеклянные панели 2026 */
     .glass-pill {
-      background: rgba(9, 14, 28, 0.88);
-      backdrop-filter: blur(22px) saturate(190%);
-      -webkit-backdrop-filter: blur(22px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.11);
-      box-shadow: 0 12px 32px -6px rgba(2, 6, 23, 0.6);
+      background: rgba(9, 14, 28, 0.90);
+      backdrop-filter: blur(24px) saturate(195%);
+      -webkit-backdrop-filter: blur(24px) saturate(195%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 14px 36px -6px rgba(2, 6, 23, 0.65);
     }
 
     /* Кнопки категорий с мягким откликом */
@@ -373,7 +413,28 @@
     #floating-country-card.card-hidden {
       opacity: 0;
       pointer-events: none;
-      transform: translateY(16px) scale(0.97);
+      transform: translateY(18px) scale(0.96);
+    }
+
+    /* Анимация тряски при ошибке в тренажёре */
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .shake-anim {
+      animation: shakeError 0.36s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes pulseSuccess {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+    .pulse-success-anim {
+      animation: pulseSuccess 0.35s ease-out both;
     }
   </style>
 </head>
@@ -385,14 +446,19 @@
       <!-- Сенсорная ручка для перетаскивания пальцем (Swipe Handle) на мобильных -->
       <div id="sheet-handle-bar" class="lg:hidden flex flex-col items-center justify-center pt-2 pb-2 cursor-grab active:cursor-grabbing bg-slate-950/95 border-b border-white/10 rounded-t-[24px] shrink-0 touch-none">
         <div class="w-11 h-1.5 rounded-full bg-slate-600/90 mb-1.5"></div>
-        <div class="w-full px-4 flex items-center justify-between">
+        <div class="w-full px-4 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2 min-w-0">
             <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] shrink-0"></span>
             <span id="mobile-sheet-title" class="text-xs font-extrabold text-white tracking-tight truncate">Все категории (77 государств)</span>
           </div>
-          <button onclick="cycleMobileSheet()" id="mobile-sheet-toggle-hint" class="text-[11px] font-bold text-sky-400 bg-sky-500/15 px-2.5 py-0.5 rounded-full border border-sky-500/30 shrink-0">
-            ▲ Список стран
-          </button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openTrainerSetupModal()" class="text-[11px] font-extrabold text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-400/40">
+              🎯 Тренажёр
+            </button>
+            <button onclick="cycleMobileSheet()" id="mobile-sheet-toggle-hint" class="text-[11px] font-bold text-sky-400 bg-sky-500/15 px-2.5 py-0.5 rounded-full border border-sky-500/30">
+              ▲ Список стран
+            </button>
+          </div>
         </div>
       </div>
 
@@ -421,7 +487,23 @@
             </button>
           </div>
         </div>
-        <div id="status-bar" class="mt-1.5 flex items-center gap-2 text-[11px] text-sky-400 font-medium">
+
+        <!-- КНОПКА ЗАПУСКА РЕЖИМА ТРЕНАЖЁРА (НОВАЯ ФУНКЦИЯ 2026) -->
+        <button onclick="openTrainerSetupModal()" class="mt-2.5 w-full relative overflow-hidden group rounded-xl p-2.5 bg-gradient-to-r from-indigo-600 via-sky-600 to-emerald-600 hover:from-indigo-500 hover:via-sky-500 hover:to-emerald-500 text-white shadow-lg border border-white/20 transition-all flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-lg bg-black/25 flex items-center justify-center text-base shadow-inner">🎯</span>
+            <div class="text-left">
+              <div class="text-xs font-black tracking-tight flex items-center gap-1.5">
+                <span>РЕЖИМ ТРЕНАЖЁРА</span>
+                <span class="px-1.5 py-0.2 text-[9px] font-extrabold uppercase bg-white/20 rounded">2026</span>
+              </div>
+              <div class="text-[10.5px] text-sky-100 font-medium">Поиск страны на карте + проверка столицы</div>
+            </div>
+          </div>
+          <span class="text-xs font-extrabold bg-black/25 px-2.5 py-1 rounded-lg border border-white/15 group-hover:translate-x-0.5 transition">Начать ➔</span>
+        </button>
+
+        <div id="status-bar" class="mt-2 flex items-center gap-2 text-[11px] text-sky-400 font-medium">
           <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping shrink-0"></span>
           <span id="status-text" class="truncate">Загрузка точных векторных границ государств...</span>
         </div>
@@ -429,7 +511,7 @@
 
       <!-- Прокручиваемая область категорий и настроек -->
       <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div class="p-3.5 space-y-2 border-b border-white/10 overflow-y-auto max-h-[52%] shrink-0">
+        <div class="p-3.5 space-y-2 border-b border-white/10 overflow-y-auto max-h-[50%] shrink-0">
           <div class="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
             <span>Категории контурной карты:</span>
             <span id="active-count-badge" class="text-sky-300 bg-sky-950/90 border border-sky-700/50 px-2 py-0.5 rounded-md font-extrabold tabular-nums">77 гос-в (87 п.)</span>
@@ -573,7 +655,7 @@
     <main id="map-wrapper">
 
       <!-- ВЕРХНИЙ HUD ДЛЯ ПК (Desktop Spatial Top Bar 2026) -->
-      <div id="desktop-top-hud" class="absolute top-3 left-14 right-4 z-[500] flex items-center justify-between pointer-events-none gap-2">
+      <div id="desktop-top-hud" class="absolute top-3 left-14 right-4 z-[500] flex items-center justify-between pointer-events-none gap-2 transition-opacity">
         <div class="flex items-center gap-2 pointer-events-auto flex-wrap">
           <button onclick="toggleDesktopSidebar()" id="btn-sidebar-toggle" class="glass-pill px-3 py-1.5 rounded-xl hover:bg-slate-800/90 text-white text-xs font-bold flex items-center gap-1.5 transition">
             <span>◀ Скрыть панель</span>
@@ -592,6 +674,9 @@
         </div>
 
         <div class="flex items-center gap-2 pointer-events-auto shrink-0">
+          <button onclick="openTrainerSetupModal()" class="glass-pill px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600/90 to-sky-600/90 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-extrabold border border-sky-400/40 shadow-lg flex items-center gap-1.5 transition">
+            <span>🎯 Тренажёр</span>
+          </button>
           <button onclick="PresetOnlyGeo()" class="glass-pill hidden xl:inline-flex px-3 py-1.5 rounded-xl hover:bg-slate-800/90 text-emerald-300 text-xs font-bold transition">
             🏝️ Подписи только 3–5
           </button>
@@ -602,22 +687,22 @@
       </div>
 
       <!-- ВЕРХНИЙ HUD ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (Эргономичный 2026) -->
-      <div id="mobile-top-hud" class="lg:hidden absolute top-2.5 left-2.5 right-2.5 z-[500] flex flex-col gap-1.5 pointer-events-none">
+      <div id="mobile-top-hud" class="lg:hidden absolute top-2.5 left-2.5 right-2.5 z-[500] flex flex-col gap-1.5 pointer-events-none transition-opacity">
         <!-- Верхняя компактная панель управления -->
         <div class="flex items-center justify-between gap-1.5 glass-pill rounded-2xl px-3 py-2 pointer-events-auto">
           <div class="flex items-center gap-2 min-w-0">
             <span class="text-base shrink-0">🌍</span>
             <div class="truncate">
               <div class="text-xs font-extrabold text-white truncate">Атлас мира 2026</div>
-              <div class="text-[10px] text-sky-400 font-semibold truncate">6 заданий • Офиц. названия</div>
+              <div class="text-[10px] text-sky-400 font-semibold truncate">6 заданий • Столицы</div>
             </div>
           </div>
           <div class="flex items-center gap-1 shrink-0">
+            <button onclick="openTrainerSetupModal()" title="Запустить тренажёр стран и столиц" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 text-white border border-sky-400/50 text-[11px] font-extrabold shadow">
+              🎯 Тренажёр
+            </button>
             <button onclick="toggleOfficialNamesMode()" id="mob-btn-official" title="Полные / краткие названия" class="px-2 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold">
               🏛️ Полн.
-            </button>
-            <button onclick="toggleSmartLOD()" id="mob-btn-lod" title="Авто-разгрузка подписей при отдалении" class="px-2 py-1.5 rounded-xl bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 text-[11px] font-bold">
-              ✨ Авто
             </button>
             <button onclick="toggleAllLabels()" id="mob-btn-labels" title="Вкл/Выкл все подписи" class="px-2 py-1.5 rounded-xl bg-sky-500/25 text-sky-300 border border-sky-500/40 text-[11px] font-bold">
               👁️
@@ -666,6 +751,101 @@
         </div>
       </div>
 
+      <!-- ========================================================================= -->
+      <!-- ВЕРХНИЙ ИГРОВОЙ HUD РЕЖИМА ТРЕНАЖЁРА (АКТИВЕН ВО ВРЕМЯ ТРЕНИРОВКИ) -->
+      <!-- ========================================================================= -->
+      <div id="trainer-active-hud" class="hidden absolute top-3 left-2.5 right-2.5 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[560px] z-[680] pointer-events-auto">
+        <div id="trainer-hud-card" class="glass-pill rounded-2xl p-3.5 sm:p-4 border border-sky-400/40 shadow-[0_20px_50px_rgba(2,6,23,0.85)]">
+          <!-- Верхняя строка: категория, прогресс и кнопка выхода -->
+          <div class="flex items-center justify-between gap-2 pb-2 mb-2.5 border-b border-white/10">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/25 text-indigo-300 border border-indigo-400/30 shrink-0">
+                🎯 Тренажёр
+              </span>
+              <span id="trainer-cat-label" class="text-xs font-bold text-slate-200 truncate">Все категории</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span id="trainer-progress-text" class="text-xs font-extrabold text-sky-400 tabular-nums">1 / 77</span>
+              <button onclick="exitTrainerMode()" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-[11px] font-bold transition">
+                ✕ Выйти
+              </button>
+            </div>
+          </div>
+
+          <!-- Полоса прогресса -->
+          <div class="w-full h-1.5 bg-slate-800/90 rounded-full overflow-hidden mb-3">
+            <div id="trainer-progress-bar" class="h-full bg-gradient-to-r from-sky-400 via-indigo-400 to-emerald-400 transition-all duration-300" style="width: 2%"></div>
+          </div>
+
+          <!-- Целевая страна и попытки -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/80 rounded-xl p-3 border border-white/10">
+            <div class="min-w-0">
+              <div id="trainer-step-badge" class="inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
+                <span>🗺️ Шаг 1 из 2: Найдите и нажмите на страну на карте</span>
+              </div>
+              <div id="trainer-target-name" class="text-sm sm:text-base font-black text-white leading-snug break-words">
+                Королевство Испания
+              </div>
+              <div id="trainer-target-sub" class="text-xs text-sky-300 font-semibold mt-0.5">
+                Краткое название: Испания
+              </div>
+            </div>
+            <div class="flex sm:flex-col items-center sm:items-end justify-between gap-1 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-white/10">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Попытки:</span>
+              <div id="trainer-attempts-hearts" class="text-sm tracking-widest font-bold">❤️❤️❤️</div>
+            </div>
+          </div>
+
+          <!-- Панель быстрой подсказки региона (во время поиска на карте) -->
+          <div id="trainer-map-actions" class="mt-2.5 flex items-center justify-between gap-2 text-[11px]">
+            <button onclick="trainerFlyToHintRegion()" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-sky-300 border border-sky-500/30 font-bold transition flex items-center gap-1">
+              <span>🧭 Показать часть света</span>
+            </button>
+            <button onclick="resetMapView()" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-white/10 font-semibold transition">
+              🌍 Весь мир
+            </button>
+            <button onclick="trainerSkipMapStep()" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 border border-white/10 font-semibold transition">
+              Сдаться (карта)
+            </button>
+          </div>
+
+          <!-- Блок ввода столицы (появляется на Шаге 2 после нахождения страны) -->
+          <div id="trainer-capital-section" class="hidden mt-3 pt-3 border-t border-white/15">
+            <label for="trainer-capital-input" class="block text-xs font-extrabold text-emerald-300 mb-1.5">
+              🏛️ Шаг 2 из 2: Введите столицу этого государства с клавиатуры:
+            </label>
+            <form onsubmit="submitTrainerCapital(event)" class="flex items-center gap-2">
+              <input
+                id="trainer-capital-input"
+                type="text"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+                placeholder="Например: Мадрид..."
+                class="flex-1 bg-slate-950/95 text-white placeholder-slate-500 text-xs sm:text-sm font-bold rounded-xl px-3.5 py-2.5 border border-sky-500/50 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 transition"
+              />
+              <button type="submit" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs sm:text-sm font-extrabold shadow-md shrink-0 transition">
+                Проверить
+              </button>
+            </form>
+            <div class="mt-2 flex items-center justify-between text-[11px]">
+              <span id="trainer-capital-hint" class="text-slate-400 font-medium">Нажмите Enter для отправки ответа</span>
+              <button type="button" onclick="trainerGiveUpCapital()" class="text-slate-400 hover:text-rose-300 font-semibold underline decoration-dotted">
+                Не знаю столицу
+              </button>
+            </div>
+          </div>
+
+          <!-- Строка обратной связи (Правильно / Неправильно) -->
+          <div id="trainer-feedback-banner" class="hidden mt-2.5 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between gap-2 border">
+            <span id="trainer-feedback-text"></span>
+            <button id="trainer-next-btn" onclick="nextTrainerQuestion()" class="hidden px-3 py-1 rounded-lg bg-white text-slate-950 font-extrabold text-xs shadow hover:bg-sky-100 shrink-0 transition">
+              Дальше ➔
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Контейнер карты Leaflet -->
       <div id="map"></div>
 
@@ -689,27 +869,50 @@
       <!-- Слой умных подписей -->
       <div id="labels-container"></div>
 
-      <!-- ПЛАВАЮЩАЯ КАРТОЧКА ВЫБРАННОЙ СТРАНЫ (Удобно и на ПК, и на смартфоне!) -->
-      <div id="floating-country-card" class="card-hidden absolute bottom-22 lg:bottom-5 left-3 right-3 lg:left-5 lg:right-auto lg:w-96 z-[550] rounded-2xl glass-pill p-3.5 text-xs border border-sky-500/45 shadow-2xl">
+      <!-- ========================================================================= -->
+      <!-- ПЛАВАЮЩАЯ КАРТОЧКА ВЫБРАННОЙ СТРАНЫ (ИСПРАВЛЕНА ДЛЯ МОБИЛЬНЫХ И ПК!) -->
+      <!-- ========================================================================= -->
+      <div id="floating-country-card" class="card-hidden absolute bottom-[88px] lg:bottom-5 left-3 right-3 lg:left-5 lg:right-auto lg:w-[410px] z-[670] rounded-2xl glass-pill p-3.5 sm:p-4 text-xs border border-sky-400/50 shadow-[0_20px_50px_rgba(2,6,23,0.85)]">
         <div class="flex items-start justify-between gap-2.5">
-          <div class="min-w-0">
-            <div id="info-badges" class="flex flex-wrap gap-1 mb-1.5"></div>
-            <div id="info-title" class="font-extrabold text-sm text-white leading-snug"></div>
+          <div class="min-w-0 flex-1">
+            <!-- Категории государства (Монархия / Федерация / Островное и т.д.) -->
+            <div id="info-badges" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <!-- Официальное и краткое название -->
+            <div id="info-title" class="font-black text-sm sm:text-[15px] text-white leading-snug"></div>
             <div id="info-short" class="text-[11.5px] text-sky-300 font-semibold mt-0.5"></div>
           </div>
-          <button onclick="closeInfoCard()" class="text-slate-400 hover:text-white text-xs w-7 h-7 flex items-center justify-center rounded-xl bg-slate-900/90 border border-white/10 shrink-0 transition">✕</button>
+          <button onclick="closeInfoCard()" title="Закрыть карточку" class="text-slate-300 hover:text-white text-xs w-7 h-7 flex items-center justify-center rounded-xl bg-slate-900/90 border border-white/15 shrink-0 transition">✕</button>
         </div>
-        <div id="info-details" class="text-slate-300 text-[11.5px] leading-relaxed mt-2 pt-2 border-t border-white/10"></div>
-        <div class="mt-2.5 pt-2 flex items-center justify-between border-t border-white/10 text-[11px] text-slate-400">
-          <span id="info-coords" class="font-mono text-[10.5px]"></span>
-          <button onclick="zoomToSelectedCountry()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold flex items-center gap-1 transition">
-            <span>🎯 Приблизить</span>
-          </button>
+
+        <!-- ВЫДЕЛЕННЫЙ БЛОК СТОЛИЦЫ ГОСУДАРСТВА (Крупно и наглядно на ПК и телефоне) -->
+        <div class="mt-2.5 p-2.5 rounded-xl bg-gradient-to-r from-emerald-950/80 via-slate-900/90 to-slate-900/90 border border-emerald-500/40 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-sm shrink-0">🏛️</span>
+            <div class="min-w-0">
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Столица государства</div>
+              <div id="info-capital" class="text-xs sm:text-sm font-black text-white truncate">Мадрид</div>
+            </div>
+          </div>
+          <span id="info-iso-pill" class="px-2 py-0.5 rounded-md bg-slate-950/90 text-slate-300 font-mono text-[10.5px] font-bold border border-white/10 shrink-0">ESP</span>
+        </div>
+
+        <div id="info-details" class="text-slate-300 text-[11.5px] leading-relaxed mt-2.5 pt-2 border-t border-white/10"></div>
+
+        <div class="mt-2.5 pt-2 flex items-center justify-between gap-2 border-t border-white/10 text-[11px] text-slate-400">
+          <span id="info-coords" class="font-mono text-[10.5px] truncate"></span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openMobileListFromCard()" class="lg:hidden px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/15 font-bold flex items-center gap-1 transition">
+              <span>📋 К списку</span>
+            </button>
+            <button onclick="zoomToSelectedCountry()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/35 font-bold flex items-center gap-1 transition">
+              <span>🎯 Приблизить</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- ЗАДАНИЕ 6: Оформленная Легенда карты (Условные знаки) -->
-      <div id="map-legend" class="absolute bottom-22 lg:bottom-5 right-3 lg:right-5 z-[520] w-72 sm:w-80 rounded-2xl glass-pill text-slate-100 p-3.5 transition-all">
+      <div id="map-legend" class="absolute bottom-[88px] lg:bottom-5 right-3 lg:right-5 z-[520] w-72 sm:w-80 rounded-2xl glass-pill text-slate-100 p-3.5 transition-all">
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
           <div class="flex items-center gap-1.5">
             <span class="text-sm">🗺️</span>
@@ -785,6 +988,175 @@
           </div>
         </div>
       </div>
+
+      <!-- ========================================================================= -->
+      <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА КАТЕГОРИИ ТРЕНАЖЁРА (SETUP MODAL) -->
+      <!-- ========================================================================= -->
+      <div id="trainer-setup-modal" class="hidden fixed inset-0 z-[750] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
+        <div class="glass-pill w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-white/15 shadow-2xl max-h-[92dvh] overflow-y-auto">
+          <div class="flex items-start justify-between gap-3 pb-3 border-b border-white/10">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/30 mb-1.5">
+                🎓 Интерактивный режим 2026
+              </span>
+              <h2 class="text-lg sm:text-xl font-black text-white tracking-tight">
+                Тренажёр политической карты мира
+              </h2>
+              <p class="text-xs text-slate-300 mt-0.5">
+                Выберите категорию: сначала найдите страну на карте (3 попытки), затем введите с клавиатуры её столицу (3 попытки).
+              </p>
+            </div>
+            <button onclick="closeTrainerSetupModal()" class="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm border border-white/10 shrink-0">✕</button>
+          </div>
+
+          <div class="my-4 space-y-2">
+            <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+              Что будем тренировать?
+            </div>
+
+            <!-- Все страны -->
+            <button onclick="startTrainerSession('all')" class="w-full group p-3 rounded-2xl bg-gradient-to-r from-indigo-950/90 via-slate-900 to-slate-900 hover:from-indigo-900/90 hover:to-slate-800 border border-indigo-500/40 flex items-center justify-between transition text-left shadow-md">
+              <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 via-amber-500 to-emerald-500 flex items-center justify-center text-lg shadow">🌍</span>
+                <div>
+                  <div class="text-xs sm:text-sm font-black text-white group-hover:text-sky-300 transition">Все страны курса со столицами</div>
+                  <div class="text-[11px] text-slate-400">Полный марафон по всем 5 категориям без повторов</div>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-xs font-extrabold shrink-0">77 стран</span>
+            </button>
+
+            <!-- 1. Монархии -->
+            <button onclick="startTrainerSession('mon')" class="w-full group p-3 rounded-2xl bg-slate-900/85 hover:bg-slate-800/90 border border-rose-500/35 flex items-center justify-between transition text-left">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-rose-600 flex items-center justify-center text-base shadow">👑</span>
+                <div>
+                  <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-rose-300 transition">1. Монархии мира</div>
+                  <div class="text-[11px] text-slate-400">Европа (12), Азия (13), Африка (3), Океания (1)</div>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 text-xs font-extrabold shrink-0">29 стран</span>
+            </button>
+
+            <!-- 2. Федерации -->
+            <button onclick="startTrainerSession('fed')" class="w-full group p-3 rounded-2xl bg-slate-900/85 hover:bg-slate-800/90 border border-amber-500/35 flex items-center justify-between transition text-left">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-amber-600 flex items-center justify-center text-base shadow">🏛️</span>
+                <div>
+                  <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-amber-300 transition">2. Федеративные государства</div>
+                  <div class="text-[11px] text-slate-400">Федерации Европы, Азии, Африки, Америки и Океании</div>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-extrabold shrink-0">28 стран</span>
+            </button>
+
+            <!-- 3. Островные -->
+            <button onclick="startTrainerSession('isl')" class="w-full group p-3 rounded-2xl bg-slate-900/85 hover:bg-slate-800/90 border border-blue-500/35 flex items-center justify-between transition text-left">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-base shadow">🏝️</span>
+                <div>
+                  <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-blue-300 transition">3. Островные государства</div>
+                  <div class="text-[11px] text-slate-400">Исландия, Ирландия, Кипр, Шри-Ланка, Мадагаскар, Куба и др.</div>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-300 border border-blue-500/30 text-xs font-extrabold shrink-0">10 стран</span>
+            </button>
+
+            <!-- 4. Архипелаги -->
+            <button onclick="startTrainerSession('arc')" class="w-full group p-3 rounded-2xl bg-slate-900/85 hover:bg-slate-800/90 border border-violet-500/35 flex items-center justify-between transition text-left">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center text-base shadow">🌋</span>
+                <div>
+                  <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-violet-300 transition">4. Страны-архипелаги</div>
+                  <div class="text-[11px] text-slate-400">Индонезия, Филиппины, Япония, Великобритания, Мальдивы и др.</div>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-xl bg-violet-500/15 text-violet-300 border border-violet-500/30 text-xs font-extrabold shrink-0">10 стран</span>
+            </button>
+
+            <!-- 5. Внутриконтинентальные -->
+            <button onclick="startTrainerSession('lnd')" class="w-full group p-3 rounded-2xl bg-slate-900/85 hover:bg-slate-800/90 border border-emerald-500/35 flex items-center justify-between transition text-left">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-base shadow">⛰️</span>
+                <div>
+                  <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-emerald-300 transition">5. Внутриконтинентальные государства</div>
+                  <div class="text-[11px] text-slate-400">Казахстан, Монголия, Узбекистан, Беларусь, Чехия, Боливия и др.</div>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-extrabold shrink-0">10 стран</span>
+            </button>
+          </div>
+
+          <div class="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+            <span>💡 Подсказка: малые острова и города-государства отмечены интерактивными кружками</span>
+            <button onclick="closeTrainerSetupModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold shrink-0">Отмена</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- МОДАЛЬНОЕ ОКНО ИТОГОВОЙ СТАТИСТИКИ ТРЕНАЖЁРА (RESULTS MODAL) -->
+      <!-- ========================================================================= -->
+      <div id="trainer-results-modal" class="hidden fixed inset-0 z-[760] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
+        <div class="glass-pill w-full max-w-xl rounded-3xl p-5 sm:p-6 border border-sky-400/40 shadow-2xl max-h-[92dvh] flex flex-col">
+          <div class="flex items-start justify-between gap-3 pb-3 border-b border-white/10 shrink-0">
+            <div>
+              <span id="results-rank-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-1">
+                🏆 Тренировка завершена
+              </span>
+              <h2 class="text-lg sm:text-xl font-black text-white tracking-tight">
+                Итоговая статистика ответов
+              </h2>
+              <p id="results-subtitle" class="text-xs text-slate-300 mt-0.5"></p>
+            </div>
+            <button onclick="exitTrainerMode()" class="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm border border-white/10 shrink-0">✕</button>
+          </div>
+
+          <!-- Карточки показателей -->
+          <div class="grid grid-cols-3 gap-2.5 my-3.5 shrink-0">
+            <div class="p-3 rounded-2xl bg-slate-900/90 border border-white/10 text-center">
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Общая точность</div>
+              <div id="res-total-percent" class="text-xl sm:text-2xl font-black text-sky-400 mt-0.5 tabular-nums">100%</div>
+              <div id="res-total-count" class="text-[10.5px] text-slate-400 mt-0.5">Пройдено стран: 10</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-900/90 border border-white/10 text-center">
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Поиск на карте</div>
+              <div id="res-map-score" class="text-xl sm:text-2xl font-black text-emerald-400 mt-0.5 tabular-nums">10 / 10</div>
+              <div id="res-map-first" class="text-[10.5px] text-slate-400 mt-0.5">С 1-й попытки: 10</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-900/90 border border-white/10 text-center">
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Знание столиц</div>
+              <div id="res-cap-score" class="text-xl sm:text-2xl font-black text-amber-400 mt-0.5 tabular-nums">10 / 10</div>
+              <div id="res-cap-first" class="text-[10.5px] text-slate-400 mt-0.5">С 1-й попытки: 10</div>
+            </div>
+          </div>
+
+          <!-- Детальный список по каждой стране -->
+          <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5 shrink-0">
+            Детальный разбор по странам:
+          </div>
+          <div id="results-history-list" class="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-[140px] max-h-[260px] bg-slate-950/60 p-2.5 rounded-2xl border border-white/10"></div>
+
+          <!-- Кнопки действий -->
+          <div class="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="restartCurrentTrainerCategory()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold shadow transition">
+                🔄 Пройти ещё раз
+              </button>
+              <button id="btn-retry-mistakes" onclick="retryTrainerMistakes()" class="hidden px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow transition">
+                ⚠️ Повторить ошибки
+              </button>
+              <button onclick="openTrainerSetupFromResults()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-white/10 transition">
+                📚 Другая категория
+              </button>
+            </div>
+            <button onclick="exitTrainerMode()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-white/10 transition">
+              На карту
+            </button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -1297,7 +1669,7 @@
             name: "Ямайка",
             shortName: "Ямайка",
             lat: 18.15, lng: -77.3, iso3: "JAM", numCode: "388", capital: "Кингстон",
-            info: "Америка • Островное государство в Карибском море в группе Больших Антильских островов",
+            info: "Америка • Островное государство в Карибского море в группе Больших Антильских островов",
             dx: -34, dy: 20, priority: 7
           },
           {
@@ -1516,12 +1888,29 @@
 
     let currentCategory = 'all';
     let allLabelsEnabled = true;
-    let smartLODEnabled = true; // Умная разгрузка при отдалении карты (без наложений и нитей)
-    let dragLabelsModeEnabled = false; // Защита от случайного сдвига подписей пальцем на телефоне
+    let smartLODEnabled = true;
+    let dragLabelsModeEnabled = false;
     let paperModeEnabled = false;
     let useOfficialNames = true;
     let selectedCountryCode = null;
     let hoveredCountryCode = null;
+
+    // Состояние режима тренажёра
+    const trainerState = {
+      active: false,
+      categoryKey: 'all',
+      queue: [],
+      currentIndex: 0,
+      currentCountry: null,
+      phase: 'idle', // 'idle' | 'find_country' | 'input_capital' | 'done_country'
+      mapAttemptsLeft: 3,
+      capitalAttemptsLeft: 3,
+      mapSolved: false,
+      capitalSolved: false,
+      wrongFlashCode: null,
+      completedCountryStatus: new Map(), // numCode -> 'perfect' | 'partial' | 'failed'
+      history: [] // { country, mapSuccess, mapAttemptsUsed, capSuccess, capAttemptsUsed }
+    };
 
     const groupLabelVisibility = {
       mon: true,
@@ -1531,7 +1920,6 @@
       lnd: true
     };
 
-    // Пользовательские смещения подписей (если включён режим ручного перетаскивания)
     const userLabelOffsets = new Map();
 
     function getDisplayName(country) {
@@ -1658,19 +2046,84 @@
         const rawGeo = topojson.feature(topology, topology.objects.countries);
         worldGeoJSON = sanitizeWorldGeoJSON(rawGeo);
         const statusBar = document.getElementById('status-bar');
-        statusBar.className = 'mt-1.5 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold';
-        statusBar.innerHTML = '<span>✓ Векторная карта готова • Официальные названия стран мира</span>';
+        statusBar.className = 'mt-2 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold';
+        statusBar.innerHTML = '<span>✓ Векторная карта и тренажёр готовы • 77 государств</span>';
         drawVectorMap();
         renderMarkersAndLabels();
       })
       .catch(() => {
         const statusBar = document.getElementById('status-bar');
-        statusBar.className = 'mt-1.5 flex items-center gap-2 text-[11px] text-amber-400 font-semibold';
+        statusBar.className = 'mt-2 flex items-center gap-2 text-[11px] text-amber-400 font-semibold';
         statusBar.innerHTML = '<span>⚠️ Контуры недоступны, активен режим маркеров и подписей</span>';
         renderMarkersAndLabels();
       });
 
-    function getCountryFillStyle(country) {
+    function getCountryFillStyle(country, rawFeatureCode) {
+      // Специальная раскраска в режиме ТРЕНАЖЁРА
+      if (trainerState.active) {
+        const code = country ? country.numCode : rawFeatureCode;
+
+        // Если только что кликнули неверно по этой стране — мигаем красным
+        if (trainerState.wrongFlashCode && trainerState.wrongFlashCode === code) {
+          return {
+            fillColor: '#ef4444',
+            fillOpacity: 0.9,
+            color: '#7f1d1d',
+            weight: 2.2
+          };
+        }
+
+        // Если это текущая загаданная страна и она уже найдена (или раскрыта после 3 попыток)
+        if (
+          trainerState.currentCountry &&
+          country &&
+          country.numCode === trainerState.currentCountry.numCode &&
+          trainerState.phase !== 'find_country'
+        ) {
+          return {
+            fillColor: trainerState.mapSolved ? '#10b981' : '#f59e0b',
+            fillOpacity: 0.92,
+            color: '#020617',
+            weight: 2.6
+          };
+        }
+
+        // Если страна уже была пройдена ранее в этой сессии тренажёра
+        if (country && trainerState.completedCountryStatus.has(country.numCode)) {
+          const st = trainerState.completedCountryStatus.get(country.numCode);
+          return {
+            fillColor: st === 'perfect' ? '#059669' : (st === 'partial' ? '#d97706' : '#e11d48'),
+            fillOpacity: 0.72,
+            color: '#0f172a',
+            weight: 1.2
+          };
+        }
+
+        // Проверяем, входит ли страна в пул текущей тренировки
+        const inPool = country && (
+          trainerState.categoryKey === 'all' ||
+          country.cats.includes(trainerState.categoryKey)
+        );
+
+        if (inPool) {
+          const isHovered = hoveredCountryCode === country.numCode;
+          return {
+            fillColor: isHovered ? '#38bdf8' : '#6366f1',
+            fillOpacity: isHovered ? 0.85 : 0.55,
+            color: isHovered ? '#020617' : '#1e293b',
+            weight: isHovered ? 2.0 : 1.15
+          };
+        }
+
+        return {
+          fillColor: paperModeEnabled ? '#ffffff' : '#f1f5f9',
+          fillOpacity: 0.85,
+          color: '#94a3b8',
+          weight: 0.7
+        };
+      }
+
+      // Стандартный режим атласа
       if (!country) {
         return {
           fillColor: paperModeEnabled ? '#ffffff' : '#f8fafc',
@@ -1728,16 +2181,26 @@
         style: feature => {
           const code = String(feature.id).padStart(3, '0');
           const c = countryByCode[code] || countryByCode[String(feature.id)];
-          return getCountryFillStyle(c);
+          return getCountryFillStyle(c, code);
         },
         onEachFeature: (feature, layer) => {
           const code = String(feature.id).padStart(3, '0');
           const c = countryByCode[code] || countryByCode[String(feature.id)];
-          if (c) {
-            layer.on('mouseover', () => highlightCountry(c.numCode, true));
-            layer.on('mouseout', () => highlightCountry(c.numCode, false));
-            layer.on('click', () => focusCountry(c.numCode, false));
-          }
+
+          layer.on('mouseover', () => {
+            if (c) highlightCountry(c.numCode, true);
+          });
+          layer.on('mouseout', () => {
+            if (c) highlightCountry(c.numCode, false);
+          });
+          layer.on('click', e => {
+            if (trainerState.active) {
+              L.DomEvent.stopPropagation(e);
+              handleTrainerMapClick(c ? c.numCode : code, c);
+            } else if (c) {
+              focusCountry(c.numCode, false);
+            }
+          });
         }
       }).addTo(map);
 
@@ -1745,6 +2208,13 @@
     }
 
     function getActiveCountries() {
+      if (trainerState.active) {
+        if (trainerState.categoryKey === 'all') return unifiedCountries;
+        return categories[trainerState.categoryKey].items.map((item, idx) => ({
+          ...unifiedCountriesMap.get(item.numCode),
+          displayOrder: idx + 1
+        }));
+      }
       if (currentCategory === 'all') {
         return unifiedCountries;
       }
@@ -1758,6 +2228,7 @@
     }
 
     function isCountryLabelVisible(country) {
+      if (trainerState.active) return false;
       if (!allLabelsEnabled) return false;
       if (currentCategory !== 'all') {
         return groupLabelVisibility[currentCategory];
@@ -1774,34 +2245,55 @@
       const activeList = getActiveCountries();
 
       activeList.forEach(country => {
-        const primaryCat = currentCategory === 'all' ? country.cats[0] : currentCategory;
-        const primaryColor = categories[primaryCat].color;
+        const primaryCat = currentCategory === 'all' ? country.cats[0] : (categories[currentCategory] ? currentCategory : country.cats[0]);
+        let primaryColor = categories[primaryCat].color;
         const secondaryCat = currentCategory === 'all' && country.cats.length > 1 ? country.cats[1] : null;
-        const secondaryColor = secondaryCat ? categories[secondaryCat].color : '#ffffff';
+        let secondaryColor = secondaryCat ? categories[secondaryCat].color : '#ffffff';
+
+        if (trainerState.active) {
+          if (trainerState.currentCountry && country.numCode === trainerState.currentCountry.numCode && trainerState.phase !== 'find_country') {
+            primaryColor = trainerState.mapSolved ? '#10b981' : '#f59e0b';
+            secondaryColor = '#ffffff';
+          } else if (trainerState.completedCountryStatus.has(country.numCode)) {
+            const st = trainerState.completedCountryStatus.get(country.numCode);
+            primaryColor = st === 'perfect' ? '#059669' : (st === 'partial' ? '#d97706' : '#e11d48');
+            secondaryColor = '#ffffff';
+          } else {
+            primaryColor = '#4f46e5';
+            secondaryColor = '#ffffff';
+          }
+        }
 
         if (country.micro) {
           L.circleMarker([country.lat, country.lng], {
-            radius: 10,
+            radius: trainerState.active ? 12 : 10,
             fillColor: primaryColor,
-            fillOpacity: 0.2,
+            fillOpacity: 0.22,
             color: primaryColor,
-            weight: 1.3,
+            weight: 1.4,
             dashArray: '3,3',
             interactive: false
           }).addTo(haloLayerGroup);
         }
 
         const marker = L.circleMarker([country.lat, country.lng], {
-          radius: 5.5,
+          radius: trainerState.active ? 6.5 : 5.5,
           fillColor: primaryColor,
-          color: secondaryCat ? secondaryColor : '#ffffff',
-          weight: secondaryCat ? 2.4 : 1.7,
+          color: secondaryCat && !trainerState.active ? secondaryColor : '#ffffff',
+          weight: secondaryCat && !trainerState.active ? 2.4 : 1.8,
           fillOpacity: 1
         });
 
         marker.on('mouseover', () => highlightCountry(country.numCode, true));
         marker.on('mouseout', () => highlightCountry(country.numCode, false));
-        marker.on('click', () => focusCountry(country.numCode, false));
+        marker.on('click', e => {
+          if (trainerState.active) {
+            L.DomEvent.stopPropagation(e);
+            handleTrainerMapClick(country.numCode, country);
+          } else {
+            focusCountry(country.numCode, false);
+          }
+        });
 
         marker.addTo(markerLayerGroup);
         countryCircleMarkers.set(country.numCode, marker);
@@ -1813,14 +2305,8 @@
     }
 
     // ============================================================================
-    // НОВЫЙ КАРТОГРАФИЧЕСКИЙ ДВИЖОК ПОДПИСЕЙ 2026 (БЕЗ НИТЕЙ, СКАЧКОВ И ЗАПАЗДЫВАНИЙ)
+    // КАРТОГРАФИЧЕСКИЙ ДВИЖОК ПОДПИСЕЙ 2026 (БЕЗ НИТЕЙ, СКАЧКОВ И ЗАПАЗДЫВАНИЙ)
     // ============================================================================
-    // Вместо инерционного «плавания» после зума и разлёта плашек на 300 пикселей:
-    // 1. Каждая подпись жёстко привязана к своей стране в радиусе MAX_TETHER_PX (не более 38px).
-    // 2. Линия-выноска рисуется до БЛИЖАЙШЕГО КРАЯ плашки, а не до её центра, поэтому она короткая и аккуратная.
-    // 3. Во время анимации зума (pinch-zoom / колесо мыши) координаты обновляются мгновенно в каждом кадре без отставания.
-    // 4. В режиме «Авто-чистота (LOD)» при сильном отдалении карты тесные кластеры в Европе и Персидском заливе
-    //    автоматически сокращают длинные титулы или временно скрывают перекрывающиеся микрогосударства до приближения/наведения.
     const labelNodesMap = new Map();
     let zoomRafId = null;
     let isZoomAnimating = false;
@@ -1831,6 +2317,8 @@
       container.innerHTML = '';
       svgGroup.innerHTML = '';
       labelNodesMap.clear();
+
+      if (trainerState.active) return;
 
       const activeList = getActiveCountries();
 
@@ -1900,7 +2388,6 @@
       });
     }
 
-    // Точное экранное положение маркера страны (работает даже во время CSS-анимации зума Leaflet)
     function getExactAnchorScreenPoint(country) {
       const marker = countryCircleMarkers.get(country.numCode);
       if (marker && marker._path) {
@@ -1916,7 +2403,6 @@
       return map.latLngToContainerPoint([country.lat, country.lng]);
     }
 
-    // Находит ближайшую точку на границе прямоугольника плашки к точке маркера (чтобы выноска не тянулась сквозь текст)
     function getClosestPointOnRectEdge(anchorX, anchorY, centerX, centerY, w, h) {
       const halfW = w / 2;
       const halfH = h / 2;
@@ -1925,19 +2411,16 @@
       return { x: clampedX, y: clampedY };
     }
 
-    // Детерминированный расчёт позиций подписей без длинных нитей и каши
     function computeCleanLabelLayout() {
-      if (labelNodesMap.size === 0) return;
+      if (trainerState.active || labelNodesMap.size === 0) return;
 
       const mapSize = map.getSize();
       const zoom = map.getZoom();
       const mobile = isSmallScreen();
 
-      // При отдалении карты расстояние от точки до подписи УМЕНЬШАЕТСЯ (никаких длинных нитей!)
       const zoomScale = Math.max(0.45, Math.min(1.15, (zoom - 1.1) / 2.6));
-      const maxEdgeGap = mobile ? 26 : 36; // Максимальная длина самой линии-выноски в пикселях
+      const maxEdgeGap = mobile ? 26 : 36;
 
-      // Сортируем страны по приоритету: выбранная -> наведённая -> крупные державы -> малые государства
       const nodesList = Array.from(labelNodesMap.values());
       nodesList.sort((a, b) => {
         const aFocus = (a.code === selectedCountryCode || a.code === hoveredCountryCode) ? 1000 : 0;
@@ -1948,17 +2431,16 @@
 
       const placedBoxes = [];
 
-      // 8 фиксированных аккуратных направлений вокруг маркера страны
       const candidateAngles = [
-        null, // 0: Предпочтительное направление страны
-        -Math.PI / 2,      // Север
-        Math.PI / 2,       // Юг
-        0,                 // Восток
-        Math.PI,           // Запад
-        -Math.PI / 4,      // Северо-Восток
-        -3 * Math.PI / 4,  // Северо-Запад
-        Math.PI / 4,       // Юго-Восток
-        3 * Math.PI / 4    // Юго-Запад
+        null,
+        -Math.PI / 2,
+        Math.PI / 2,
+        0,
+        Math.PI,
+        -Math.PI / 4,
+        -3 * Math.PI / 4,
+        Math.PI / 4,
+        3 * Math.PI / 4
       ];
 
       nodesList.forEach(node => {
@@ -1966,7 +2448,6 @@
         const isFocused = (node.code === selectedCountryCode || node.code === hoveredCountryCode);
         const anchor = getExactAnchorScreenPoint(country);
 
-        // Если на малом зуме включена «Авто-чистота», для длинных названий в тесных кластерах можем использовать компактное имя
         const fullText = getDisplayName(country);
         const shortText = country.shortName || fullText;
         const canCompactAtLowZoom = smartLODEnabled && !isFocused && zoom < 3.1 && useOfficialNames && fullText.length > 22;
@@ -1981,7 +2462,6 @@
           node.w = Math.max(48, r.width || fullText.length * 6.3 + 20);
         }
 
-        // Если пользователь вручную перетащил подпись — фиксируем её (но в разумных пределах)
         const manualOffset = userLabelOffsets.get(node.code);
         if (manualOffset) {
           node.dx = manualOffset.dx;
@@ -1997,7 +2477,6 @@
           return;
         }
 
-        // Базовое направление из настроек страны
         const rawDx = country.dx || 0;
         const rawDy = country.dy || -16;
         const prefAngle = Math.atan2(rawDy, rawDx);
@@ -2012,7 +2491,6 @@
           const angle = candidateAngles[cIdx] === null ? prefAngle : candidateAngles[cIdx];
           const gap = cIdx === 0 ? baseGap : Math.min(maxEdgeGap, baseGap + 4);
 
-          // Вычисляем смещение центра плашки так, чтобы её край отстоял от маркера ровно на `gap` пикселей
           const cosA = Math.cos(angle);
           const sinA = Math.sin(angle);
           const candDx = cosA * (node.w / 2 + gap * 0.65);
@@ -2027,13 +2505,11 @@
             y2: cy + node.h / 2 + 2
           };
 
-          // Штраф за выход за пределы видимой области карты
           let penalty = cIdx * 12;
           if (box.x1 < 6 || box.x2 > mapSize.x - 6 || box.y1 < 6 || box.y2 > mapSize.y - 6) {
             penalty += 900;
           }
 
-          // Проверяем пересечение с уже размещёнными подписями
           let overlapArea = 0;
           for (let i = 0; i < placedBoxes.length; i++) {
             const b = placedBoxes[i];
@@ -2064,8 +2540,6 @@
         node.dx = bestDx;
         node.dy = bestDy;
 
-        // Если включён режим «Авто-чистота (LOD)» и на мелком зуме подпись сильно перекрывает соседнюю —
-        // аккуратно скрываем текст микрогосударства до приближения или наведения курсора
         const hideThresholdZoom = currentCategory === 'all' ? 3.55 : 2.75;
         if (smartLODEnabled && !isFocused && !foundCleanSpot && zoom < hideThresholdZoom && minPenalty > 650) {
           node.lodHidden = true;
@@ -2083,10 +2557,10 @@
       });
     }
 
-    // Мгновенная отрисовка подписей и коротких линий-выносок (60 FPS, без запаздывания и нитей)
     function renderLabelsImmediate() {
+      if (trainerState.active) return;
+
       const svgEl = document.getElementById('callout-svg');
-      // Во время быстрого зума скрываем тонкие штрихи выносок, чтобы не мелькали
       svgEl.style.opacity = isZoomAnimating ? '0' : '1';
 
       labelNodesMap.forEach(node => {
@@ -2105,7 +2579,6 @@
           return;
         }
 
-        // Вычисляем ближайшую точку на границе плашки, чтобы выноска была короткой и аккуратной
         const edgePt = getClosestPointOnRectEdge(anchor.x, anchor.y, labelX, labelY, w, h);
         const edgeDist = Math.hypot(edgePt.x - anchor.x, edgePt.y - anchor.y);
 
@@ -2151,7 +2624,6 @@
       }
     }
 
-    // Обработка клика и безопасного перетаскивания подписей
     function setupLabelInteraction(nodeObj) {
       const { el, country } = nodeObj;
 
@@ -2163,7 +2635,6 @@
       });
 
       el.addEventListener('pointerdown', e => {
-        // Если режим перетаскивания подписей ВЫКЛЮЧЕН, не перехватываем жест карты на мобильных!
         if (!dragLabelsModeEnabled) return;
 
         e.stopPropagation();
@@ -2181,7 +2652,6 @@
             isDragging = true;
           }
           if (isDragging) {
-            // Ограничиваем максимальный увод подписи до 95px, чтобы не создавать длинных нитей через океаны
             const rawNewDx = startDx + moveX;
             const rawNewDy = startDy + moveY;
             const dist = Math.hypot(rawNewDx, rawNewDy);
@@ -2209,7 +2679,6 @@
       });
     }
 
-    // Синхронизация с событиями карты Leaflet
     map.on('zoomstart', () => {
       isZoomAnimating = true;
       if (!zoomRafId) {
@@ -2245,7 +2714,6 @@
 
       handleBar.addEventListener('pointerdown', e => {
         if (!isSmallScreen()) return;
-        // Если нажали прямо на кнопку "Список стран", позволяем обработать обычный клик
         if (e.target.closest('button')) return;
 
         dragging = true;
@@ -2364,6 +2832,10 @@
     // Подсветка страны при наведении
     function highlightCountry(numCode, isHover) {
       hoveredCountryCode = isHover ? numCode : null;
+      if (trainerState.active) {
+        drawVectorMap();
+        return;
+      }
       const node = labelNodesMap.get(numCode);
       if (node) {
         node.el.classList.toggle('highlighted', isHover || selectedCountryCode === numCode);
@@ -2371,11 +2843,24 @@
       renderLabelsImmediate();
     }
 
-    // Выбор страны и показ плавающей карточки
+    // ============================================================================
+    // ИСПРАВЛЕННЫЙ ВЫБОР СТРАНЫ И ПОКАЗ КРАТКОЙ СВОДКИ (НА ПК И ТЕЛЕФОНЕ)
+    // ============================================================================
     function focusCountry(numCode, zoomIn = true) {
+      if (trainerState.active) return;
+
       selectedCountryCode = numCode;
       const country = unifiedCountriesMap.get(numCode);
       if (!country) return;
+
+      // На мобильном устройстве сворачиваем нижнюю шторку в режим 'peek',
+      // чтобы она НЕ перекрывала всплывающую карточку со сводкой и столицей!
+      if (isSmallScreen()) {
+        setMobileSheetState('peek');
+        // Также скрываем легенду на телефоне, чтобы карточка страны была идеально видна
+        legendCollapsed = true;
+        applyLegendState();
+      }
 
       showCountryInfoCard(country);
       drawVectorMap();
@@ -2384,10 +2869,7 @@
         node.el.classList.toggle('highlighted', code === numCode);
       });
 
-      const sidebar = document.getElementById('sidebar');
-      if (isSmallScreen() && sidebar.dataset.sheet === 'full') {
-        setMobileSheetState('peek');
-      }
+      renderCountryList();
 
       if (zoomIn) {
         const targetZoom = country.micro ? 5.5 : 4.2;
@@ -2406,24 +2888,42 @@
       }
     }
 
+    function openMobileListFromCard() {
+      closeInfoCard();
+      if (isSmallScreen()) {
+        setMobileSheetState('half');
+      }
+    }
+
     function showCountryInfoCard(country) {
       const card = document.getElementById('floating-country-card');
       const titleEl = document.getElementById('info-title');
       const shortEl = document.getElementById('info-short');
+      const capitalEl = document.getElementById('info-capital');
+      const isoPillEl = document.getElementById('info-iso-pill');
       const badgesEl = document.getElementById('info-badges');
       const detailsEl = document.getElementById('info-details');
       const coordsEl = document.getElementById('info-coords');
 
       card.classList.remove('card-hidden');
       titleEl.textContent = country.name;
-      shortEl.textContent = `Кратко: ${country.shortName} • Столица: ${country.capital}`;
-      badgesEl.innerHTML = '';
+      shortEl.textContent = country.shortName && country.shortName !== country.name
+        ? `Краткое название: ${country.shortName}`
+        : `Официальное географическое название`;
 
+      if (capitalEl) {
+        capitalEl.textContent = country.capital;
+      }
+      if (isoPillEl) {
+        isoPillEl.textContent = country.iso3;
+      }
+
+      badgesEl.innerHTML = '';
       country.cats.forEach(cKey => {
         const badge = document.createElement('span');
-        badge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold text-white shadow-sm';
+        badge.className = 'px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold text-white shadow-sm flex items-center gap-1';
         badge.style.backgroundColor = categories[cKey].color;
-        badge.textContent = `${categories[cKey].num}. ${categories[cKey].shortLabel} (№${country.catOrder[cKey]})`;
+        badge.innerHTML = `<span>${categories[cKey].num}. ${categories[cKey].shortLabel}</span><span class="opacity-80">(№${country.catOrder[cKey]})</span>`;
         badgesEl.appendChild(badge);
       });
 
@@ -2431,7 +2931,7 @@
       if (coordsEl) {
         const latDir = country.lat >= 0 ? 'с.ш.' : 'ю.ш.';
         const lngDir = country.lng >= 0 ? 'в.д.' : 'з.д.';
-        coordsEl.textContent = `📍 ${Math.abs(country.lat).toFixed(1)}° ${latDir}, ${Math.abs(country.lng).toFixed(1)}° ${lngDir} • ${country.iso3}`;
+        coordsEl.textContent = `📍 ${Math.abs(country.lat).toFixed(1)}° ${latDir}, ${Math.abs(country.lng).toFixed(1)}° ${lngDir}`;
       }
     }
 
@@ -2442,6 +2942,7 @@
       labelNodesMap.forEach(node => node.el.classList.remove('highlighted'));
       computeCleanLabelLayout();
       renderLabelsImmediate();
+      renderCountryList();
     }
 
     function clearSearchInput() {
@@ -2509,8 +3010,8 @@
           text.className = 'min-w-0';
           const primaryTitle = getDisplayName(item);
           const subTitle = useOfficialNames && item.shortName !== item.name
-            ? `${item.shortName} • Столица: ${item.capital}`
-            : `Столица: ${item.capital}`;
+            ? `${item.shortName} • 🏛️ Столица: ${item.capital}`
+            : `🏛️ Столица: ${item.capital}`;
 
           text.innerHTML = `
             <div class="font-bold text-slate-100 leading-snug break-words">${item.order}. ${primaryTitle}</div>
@@ -2537,7 +3038,482 @@
       });
     }
 
-    // Вкл / Выкл все подписи сразу
+    // ============================================================================
+    // РЕЖИМ ТРЕНАЖЁРА (ПОЛНАЯ ЛОГИКА: ВЫБОР КАТЕГОРИИ -> КАРТА -> СТОЛИЦА -> ИТОГИ)
+    // ============================================================================
+    function openTrainerSetupModal() {
+      document.getElementById('trainer-setup-modal').classList.remove('hidden');
+    }
+
+    function closeTrainerSetupModal() {
+      document.getElementById('trainer-setup-modal').classList.add('hidden');
+    }
+
+    function openTrainerSetupFromResults() {
+      document.getElementById('trainer-results-modal').classList.add('hidden');
+      openTrainerSetupModal();
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function startTrainerSession(catKey, customList = null) {
+      closeTrainerSetupModal();
+      document.getElementById('trainer-results-modal').classList.add('hidden');
+      closeInfoCard();
+
+      let pool = [];
+      if (customList && customList.length > 0) {
+        pool = customList;
+      } else if (catKey === 'all') {
+        pool = unifiedCountries;
+      } else {
+        pool = categories[catKey].items.map(item => unifiedCountriesMap.get(item.numCode));
+      }
+
+      trainerState.active = true;
+      trainerState.categoryKey = catKey;
+      trainerState.queue = shuffleArray(pool);
+      trainerState.currentIndex = 0;
+      trainerState.completedCountryStatus.clear();
+      trainerState.history = [];
+      trainerState.wrongFlashCode = null;
+
+      document.body.classList.add('trainer-active');
+      document.getElementById('trainer-active-hud').classList.remove('hidden');
+      document.getElementById('map-legend').classList.add('hidden');
+
+      const catTitle = customList
+        ? `Повтор ошибок (${pool.length})`
+        : (catKey === 'all' ? 'Все категории (77 государств)' : categories[catKey].name);
+      document.getElementById('trainer-cat-label').textContent = catTitle;
+
+      setTimeout(() => {
+        map.invalidateSize();
+        resetMapView();
+        loadCurrentTrainerCountry();
+      }, 150);
+    }
+
+    function restartCurrentTrainerCategory() {
+      startTrainerSession(trainerState.categoryKey);
+    }
+
+    function retryTrainerMistakes() {
+      const mistakes = trainerState.history
+        .filter(h => !h.mapSuccess || !h.capSuccess || h.mapAttemptsUsed > 1 || h.capAttemptsUsed > 1)
+        .map(h => h.country);
+      if (mistakes.length > 0) {
+        startTrainerSession(trainerState.categoryKey, mistakes);
+      } else {
+        restartCurrentTrainerCategory();
+      }
+    }
+
+    function exitTrainerMode() {
+      trainerState.active = false;
+      trainerState.phase = 'idle';
+      document.body.classList.remove('trainer-active');
+      document.getElementById('trainer-active-hud').classList.add('hidden');
+      document.getElementById('trainer-setup-modal').classList.add('hidden');
+      document.getElementById('trainer-results-modal').classList.add('hidden');
+
+      applyLegendState();
+      setTimeout(() => {
+        map.invalidateSize();
+        drawVectorMap();
+        renderMarkersAndLabels();
+      }, 220);
+    }
+
+    function renderHearts(count) {
+      return '❤️'.repeat(Math.max(0, count)) + '🖤'.repeat(Math.max(0, 3 - count));
+    }
+
+    function loadCurrentTrainerCountry() {
+      if (trainerState.currentIndex >= trainerState.queue.length) {
+        finishTrainerSession();
+        return;
+      }
+
+      const country = trainerState.queue[trainerState.currentIndex];
+      trainerState.currentCountry = country;
+      trainerState.phase = 'find_country';
+      trainerState.mapAttemptsLeft = 3;
+      trainerState.capitalAttemptsLeft = 3;
+      trainerState.mapSolved = false;
+      trainerState.capitalSolved = false;
+
+      // Обновляем HUD
+      const total = trainerState.queue.length;
+      const cur = trainerState.currentIndex + 1;
+      document.getElementById('trainer-progress-text').textContent = `${cur} / ${total}`;
+      document.getElementById('trainer-progress-bar').style.width = `${((cur - 1) / total) * 100}%`;
+
+      document.getElementById('trainer-step-badge').className = 'inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-amber-300 mb-1';
+      document.getElementById('trainer-step-badge').innerHTML = '<span>🗺️ Шаг 1 из 2: Найдите и нажмите на страну на карте</span>';
+
+      document.getElementById('trainer-target-name').textContent = country.name;
+      const catNames = country.cats.map(c => categories[c].shortLabel).join(' + ');
+      document.getElementById('trainer-target-sub').textContent =
+        country.shortName && country.shortName !== country.name
+          ? `Кратко: ${country.shortName} • Категория: ${catNames}`
+          : `Категория: ${catNames}`;
+
+      document.getElementById('trainer-attempts-hearts').textContent = renderHearts(3);
+
+      document.getElementById('trainer-map-actions').classList.remove('hidden');
+      document.getElementById('trainer-capital-section').classList.add('hidden');
+      document.getElementById('trainer-feedback-banner').classList.add('hidden');
+      document.getElementById('trainer-next-btn').classList.add('hidden');
+
+      const capInput = document.getElementById('trainer-capital-input');
+      capInput.value = '';
+      capInput.disabled = false;
+
+      drawVectorMap();
+      renderMarkersAndLabels();
+    }
+
+    function showTrainerFeedback(type, message, showNextButton = false) {
+      const banner = document.getElementById('trainer-feedback-banner');
+      const textEl = document.getElementById('trainer-feedback-text');
+      const nextBtn = document.getElementById('trainer-next-btn');
+
+      banner.classList.remove('hidden', 'bg-emerald-950/90', 'border-emerald-500/50', 'text-emerald-200', 'bg-rose-950/90', 'border-rose-500/50', 'text-rose-200', 'bg-amber-950/90', 'border-amber-500/50', 'text-amber-200');
+
+      if (type === 'success') {
+        banner.classList.add('bg-emerald-950/90', 'border-emerald-500/50', 'text-emerald-200');
+      } else if (type === 'error') {
+        banner.classList.add('bg-rose-950/90', 'border-rose-500/50', 'text-rose-200');
+      } else {
+        banner.classList.add('bg-amber-950/90', 'border-amber-500/50', 'text-amber-200');
+      }
+
+      textEl.textContent = message;
+      nextBtn.classList.toggle('hidden', !showNextButton);
+    }
+
+    function triggerHudAnimation(animClass) {
+      const card = document.getElementById('trainer-hud-card');
+      card.classList.remove('shake-anim', 'pulse-success-anim');
+      void card.offsetWidth;
+      card.classList.add(animClass);
+    }
+
+    // Обработка клика по стране на карте в режиме тренажёра
+    function handleTrainerMapClick(clickedCode, clickedCountryObj) {
+      if (!trainerState.active || trainerState.phase !== 'find_country') return;
+
+      const target = trainerState.currentCountry;
+      if (!target) return;
+
+      const isMatch = clickedCode === target.numCode || (target.altCode && clickedCode === target.altCode);
+
+      if (isMatch) {
+        trainerState.mapSolved = true;
+        triggerHudAnimation('pulse-success-anim');
+        showTrainerFeedback('success', `✅ Отлично! Вы верно нашли государство «${target.shortName || target.name}» на карте.`);
+        transitionToCapitalStep();
+      } else {
+        trainerState.mapAttemptsLeft--;
+        document.getElementById('trainer-attempts-hearts').textContent = renderHearts(trainerState.mapAttemptsLeft);
+        triggerHudAnimation('shake-anim');
+
+        trainerState.wrongFlashCode = clickedCode;
+        drawVectorMap();
+        setTimeout(() => {
+          trainerState.wrongFlashCode = null;
+          drawVectorMap();
+        }, 650);
+
+        const clickedLabel = clickedCountryObj ? ` (вы нажали: ${clickedCountryObj.shortName || clickedCountryObj.name})` : '';
+
+        if (trainerState.mapAttemptsLeft > 0) {
+          showTrainerFeedback('error', `❌ Неверно${clickedLabel}! Осталось попыток на карте: ${trainerState.mapAttemptsLeft}.`);
+        } else {
+          trainerState.mapSolved = false;
+          showTrainerFeedback('warn', `⚠️ Попытки на карте закончились! Показываем «${target.shortName || target.name}» на карте. Теперь назовите столицу.`);
+          transitionToCapitalStep();
+        }
+      }
+    }
+
+    function trainerSkipMapStep() {
+      if (!trainerState.active || trainerState.phase !== 'find_country') return;
+      trainerState.mapAttemptsLeft = 0;
+      trainerState.mapSolved = false;
+      document.getElementById('trainer-attempts-hearts').textContent = renderHearts(0);
+      const target = trainerState.currentCountry;
+      showTrainerFeedback('warn', `⚠️ Расположение государства «${target.shortName || target.name}» показано на карте. Теперь введите его столицу.`);
+      transitionToCapitalStep();
+    }
+
+    function trainerFlyToHintRegion() {
+      const target = trainerState.currentCountry;
+      if (!target) return;
+      map.flyTo([target.lat, target.lng], isSmallScreen() ? 2.8 : 3.3, { duration: 0.65 });
+      const regionName = target.info.split('•')[0].trim();
+      showTrainerFeedback('warn', `🧭 Подсказка: регион поиска — ${regionName}.`);
+    }
+
+    function transitionToCapitalStep() {
+      const target = trainerState.currentCountry;
+      trainerState.phase = 'input_capital';
+      trainerState.capitalAttemptsLeft = 3;
+
+      // Приближаем карту к найденной/раскрытой стране
+      const targetZoom = target.micro ? 5.2 : 4.0;
+      map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), targetZoom), { duration: 0.6 });
+
+      document.getElementById('trainer-step-badge').className = 'inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-emerald-300 mb-1';
+      document.getElementById('trainer-step-badge').innerHTML = '<span>🏛️ Шаг 2 из 2: Назовите столицу государства (3 попытки)</span>';
+      document.getElementById('trainer-attempts-hearts').textContent = renderHearts(3);
+
+      document.getElementById('trainer-map-actions').classList.add('hidden');
+      document.getElementById('trainer-capital-section').classList.remove('hidden');
+      document.getElementById('trainer-capital-hint').textContent = 'Нажмите Enter или кнопку «Проверить»';
+
+      drawVectorMap();
+      renderMarkersAndLabels();
+
+      setTimeout(() => {
+        const input = document.getElementById('trainer-capital-input');
+        if (input) input.focus();
+      }, 200);
+    }
+
+    // Нормализация строки для умной проверки столицы
+    function normalizeCapitalStr(str) {
+      return (str || '')
+        .toLowerCase()
+        .replace(/ё/g, 'е')
+        .replace(/[-—–()/.,]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function isCapitalAnswerCorrect(userRaw, country) {
+      const userNorm = normalizeCapitalStr(userRaw);
+      if (!userNorm) return false;
+
+      const officialNorm = normalizeCapitalStr(country.capital);
+      if (userNorm === officialNorm) return true;
+
+      // Специальные синонимы и двойные столицы для удобства учащихся
+      const customAliases = {
+        "068": ["сукре", "ла пас", "сукре ла пас"], // Боливия
+        "144": ["шри джаяварденепура котте", "котте", "коломбо"], // Шри-Ланка
+        "414": ["эль кувейт", "кувейт"], // Кувейт
+        "020": ["андорра ла велья", "андорра"], // Андорра
+        "528": ["амстердам", "гаага"], // Нидерланды
+        "748": ["мбабане", "лобамба"], // Эсватини
+        "458": ["куала лумпур", "путраджая"], // Малайзия
+        "840": ["вашингтон", "вашингтон округ колумбия"], // США
+        "356": ["нью дели", "дели"], // Индия
+        "336": ["ватикан"], // Ватикан
+        "492": ["монако"], // Монако
+        "702": ["сингапур"], // Сингапур
+        "442": ["люксембург"] // Люксембург
+      };
+
+      const aliases = customAliases[country.numCode];
+      if (aliases && aliases.includes(userNorm)) {
+        return true;
+      }
+
+      return false;
+    }
+
+    function submitTrainerCapital(e) {
+      if (e) e.preventDefault();
+      if (!trainerState.active) return;
+
+      // Если вопрос уже завершён, нажатие Enter переводит к следующей стране
+      if (trainerState.phase === 'done_country') {
+        nextTrainerQuestion();
+        return;
+      }
+
+      if (trainerState.phase !== 'input_capital') return;
+
+      const input = document.getElementById('trainer-capital-input');
+      const val = (input.value || '').trim();
+      if (!val) return;
+
+      const target = trainerState.currentCountry;
+
+      if (isCapitalAnswerCorrect(val, target)) {
+        trainerState.capitalSolved = true;
+        input.disabled = true;
+        triggerHudAnimation('pulse-success-anim');
+        showTrainerFeedback('success', `🎉 Браво! Столица государства — ${target.capital}.`, true);
+        finalizeCurrentCountryRecord();
+      } else {
+        trainerState.capitalAttemptsLeft--;
+        document.getElementById('trainer-attempts-hearts').textContent = renderHearts(trainerState.capitalAttemptsLeft);
+        triggerHudAnimation('shake-anim');
+
+        if (trainerState.capitalAttemptsLeft > 0) {
+          const firstLetter = target.capital.charAt(0).toUpperCase();
+          const hintMsg = trainerState.capitalAttemptsLeft === 1
+            ? `Подсказка: столица начинается на букву «${firstLetter}...»`
+            : `Попробуйте ещё раз!`;
+          document.getElementById('trainer-capital-hint').textContent = hintMsg;
+          showTrainerFeedback('error', `❌ Неверно («${val}»). Осталось попыток: ${trainerState.capitalAttemptsLeft}. ${hintMsg}`);
+          input.select();
+        } else {
+          trainerState.capitalSolved = false;
+          input.disabled = true;
+          input.value = target.capital;
+          showTrainerFeedback('warn', `⚠️ Попытки исчерпаны! Правильная столица: ${target.capital}.`, true);
+          finalizeCurrentCountryRecord();
+        }
+      }
+    }
+
+    function trainerGiveUpCapital() {
+      if (!trainerState.active || trainerState.phase !== 'input_capital') return;
+      const target = trainerState.currentCountry;
+      const input = document.getElementById('trainer-capital-input');
+      trainerState.capitalAttemptsLeft = 0;
+      trainerState.capitalSolved = false;
+      document.getElementById('trainer-attempts-hearts').textContent = renderHearts(0);
+      input.disabled = true;
+      input.value = target.capital;
+      showTrainerFeedback('warn', `Правильный ответ: столица государства — ${target.capital}.`, true);
+      finalizeCurrentCountryRecord();
+    }
+
+    function finalizeCurrentCountryRecord() {
+      trainerState.phase = 'done_country';
+      const target = trainerState.currentCountry;
+
+      const mapUsed = 3 - trainerState.mapAttemptsLeft + (trainerState.mapSolved ? 1 : 0);
+      const capUsed = 3 - trainerState.capitalAttemptsLeft + (trainerState.capitalSolved ? 1 : 0);
+
+      let status = 'failed';
+      if (trainerState.mapSolved && trainerState.capitalSolved) {
+        status = (mapUsed === 1 && capUsed === 1) ? 'perfect' : 'partial';
+      } else if (trainerState.mapSolved || trainerState.capitalSolved) {
+        status = 'partial';
+      }
+
+      trainerState.completedCountryStatus.set(target.numCode, status);
+      trainerState.history.push({
+        country: target,
+        mapSuccess: trainerState.mapSolved,
+        mapAttemptsUsed: mapUsed,
+        capSuccess: trainerState.capitalSolved,
+        capAttemptsUsed: capUsed
+      });
+
+      drawVectorMap();
+      renderMarkersAndLabels();
+    }
+
+    function nextTrainerQuestion() {
+      if (!trainerState.active) return;
+      trainerState.currentIndex++;
+      loadCurrentTrainerCountry();
+    }
+
+    // Глобальная поддержка клавиши Enter для перехода к следующему вопросу после ответа
+    window.addEventListener('keydown', e => {
+      if (trainerState.active && trainerState.phase === 'done_country' && e.key === 'Enter') {
+        e.preventDefault();
+        nextTrainerQuestion();
+      }
+    });
+
+    function finishTrainerSession() {
+      trainerState.phase = 'idle';
+      document.getElementById('trainer-progress-bar').style.width = '100%';
+      document.getElementById('trainer-active-hud').classList.add('hidden');
+
+      const total = trainerState.history.length;
+      const mapSuccessCount = trainerState.history.filter(h => h.mapSuccess).length;
+      const mapFirstTryCount = trainerState.history.filter(h => h.mapSuccess && h.mapAttemptsUsed === 1).length;
+      const capSuccessCount = trainerState.history.filter(h => h.capSuccess).length;
+      const capFirstTryCount = trainerState.history.filter(h => h.capSuccess && h.capAttemptsUsed === 1).length;
+
+      const totalPoints = mapSuccessCount + capSuccessCount;
+      const maxPoints = total * 2;
+      const accuracy = maxPoints > 0 ? Math.round((totalPoints / maxPoints) * 100) : 0;
+
+      document.getElementById('res-total-percent').textContent = `${accuracy}%`;
+      document.getElementById('res-total-count').textContent = `Пройдено стран: ${total}`;
+      document.getElementById('res-map-score').textContent = `${mapSuccessCount} / ${total}`;
+      document.getElementById('res-map-first').textContent = `С 1-й попытки: ${mapFirstTryCount}`;
+      document.getElementById('res-cap-score').textContent = `${capSuccessCount} / ${total}`;
+      document.getElementById('res-cap-first').textContent = `С 1-й попытки: ${capFirstTryCount}`;
+
+      const rankBadge = document.getElementById('results-rank-badge');
+      if (accuracy >= 90) {
+        rankBadge.textContent = '🏆 Гранд-мастер политической географии!';
+        rankBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-1';
+      } else if (accuracy >= 70) {
+        rankBadge.textContent = '🌟 Отличное знание карты и столиц!';
+        rankBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/30 mb-1';
+      } else {
+        rankBadge.textContent = '💪 Хорошая тренировка! Повторим сложные страны';
+        rankBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/30 mb-1';
+      }
+
+      const catTitle = trainerState.categoryKey === 'all'
+        ? 'Все категории (77 государств)'
+        : categories[trainerState.categoryKey].name;
+      document.getElementById('results-subtitle').textContent = `Категория: ${catTitle}`;
+
+      // Заполняем детальный список
+      const listEl = document.getElementById('results-history-list');
+      listEl.innerHTML = '';
+
+      let hasMistakes = false;
+      trainerState.history.forEach((item, idx) => {
+        if (!item.mapSuccess || !item.capSuccess || item.mapAttemptsUsed > 1 || item.capAttemptsUsed > 1) {
+          hasMistakes = true;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900/85 border border-white/5 text-xs';
+
+        const mapBadge = item.mapSuccess
+          ? `<span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-[10px]">🗺️ Карта: ✓ (${item.mapAttemptsUsed} поп.)</span>`
+          : `<span class="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-[10px]">🗺️ Карта: ✕</span>`;
+
+        const capBadge = item.capSuccess
+          ? `<span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-[10px]">🏛️ Столица: ✓ (${item.capAttemptsUsed} поп.)</span>`
+          : `<span class="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-[10px]">🏛️ Столица: ✕</span>`;
+
+        row.innerHTML = `
+          <div class="min-w-0">
+            <div class="font-bold text-white truncate">${idx + 1}. ${item.country.name}</div>
+            <div class="text-[11px] text-sky-300 font-medium">Столица: <b>${item.country.capital}</b></div>
+          </div>
+          <div class="flex flex-wrap items-center justify-end gap-1 shrink-0">
+            ${mapBadge}
+            ${capBadge}
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+
+      const retryBtn = document.getElementById('btn-retry-mistakes');
+      retryBtn.classList.toggle('hidden', !hasMistakes);
+
+      document.getElementById('trainer-results-modal').classList.remove('hidden');
+    }
+
+    // ============================================================================
+    // СТАНДАРТНЫЕ НАСТРОЙКИ АТЛАСА И НАВИГАЦИИ
+    // ============================================================================
     function toggleAllLabels() {
       allLabelsEnabled = !allLabelsEnabled;
       const btn = document.getElementById('btn-toggle-all-labels');
@@ -2591,7 +3567,6 @@
       });
     }
 
-    // Вкл / Выкл режим умной авто-разгрузки подписей при отдалении (Smart LOD)
     function toggleSmartLOD() {
       smartLODEnabled = !smartLODEnabled;
       const btn = document.getElementById('btn-lod-mode');
@@ -2616,7 +3591,6 @@
       renderLabelsImmediate();
     }
 
-    // Вкл / Выкл режим ручного перетаскивания подписей
     function toggleDragLabelsMode() {
       dragLabelsModeEnabled = !dragLabelsModeEnabled;
       document.body.classList.toggle('drag-labels-mode', dragLabelsModeEnabled);
@@ -2654,7 +3628,6 @@
       map.flyTo([22, 18], targetZoom, { duration: 0.55 });
     }
 
-    // Быстрая навигация по частям света
     function flyToRegion(region) {
       const mobile = isSmallScreen();
       const presets = {
@@ -2669,7 +3642,6 @@
       map.flyTo(target.center, target.zoom, { duration: 0.6 });
     }
 
-    // Управление боковой панелью на ПК
     let desktopSidebarCollapsed = false;
     function toggleDesktopSidebar() {
       desktopSidebarCollapsed = !desktopSidebarCollapsed;
@@ -2687,7 +3659,6 @@
       }, 330);
     }
 
-    // Управление нижней шторкой (Bottom Sheet) на мобильных устройствах
     function setMobileSheetState(state) {
       const sidebar = document.getElementById('sidebar');
       const hint = document.getElementById('mobile-sheet-toggle-hint');
@@ -2707,7 +3678,6 @@
       else setMobileSheetState('peek');
     }
 
-    // Переключатель предпросмотра смартфона прямо на ПК
     function toggleForceMobileMode() {
       const forced = document.body.classList.toggle('force-mobile');
       const exitBtn = document.getElementById('mob-exit-preview');
@@ -2726,9 +3696,9 @@
       }, 330);
     }
 
-    // Сворачивание/разворачивание Легенды карты (Задание 6)
     let legendCollapsed = window.innerWidth < 1024;
     function applyLegendState() {
+      if (trainerState.active) return;
       const legendBox = document.getElementById('map-legend');
       const body = document.getElementById('legend-body');
       const btn = document.getElementById('legend-collapse-btn');
