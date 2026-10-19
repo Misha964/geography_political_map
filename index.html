@@ -10,6 +10,7 @@
   <style>
     :root {
       --app-height: 100dvh;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     * {
@@ -27,12 +28,12 @@
       height: var(--app-height);
       overflow: hidden;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: #040711;
+      background: #030712;
       color: #f8fafc;
       font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     }
 
-    /* Тонкий современный скроллбар 2026 */
+    /* Современный тонкий скроллбар 2026 */
     ::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -64,27 +65,31 @@
       overflow: hidden;
     }
 
-    /* Боковая панель (Glassmorphism 2026) */
+    /* Боковая панель на ПК / Нижняя шторка (Bottom Sheet) на мобильных */
     #sidebar {
-      background: linear-gradient(180deg, rgba(8, 13, 26, 0.96) 0%, rgba(5, 9, 19, 0.98) 100%);
-      backdrop-filter: blur(28px) saturate(180%);
-      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      background: linear-gradient(180deg, rgba(9, 14, 28, 0.96) 0%, rgba(4, 8, 18, 0.98) 100%);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
       display: flex;
       flex-direction: column;
-      z-index: 600;
-      transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      z-index: 650;
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
                   width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-                  height 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+                  height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #sidebar.dragging-sheet {
+      transition: none !important;
     }
 
     /* Десктопный режим (>= 1024px) */
     @media (min-width: 1024px) {
       body:not(.force-mobile) #sidebar {
         position: relative;
-        width: 432px;
+        width: 428px;
         height: 100%;
-        border-right: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 16px 0 48px rgba(2, 6, 23, 0.55);
+        border-right: 1px solid rgba(255, 255, 255, 0.09);
+        box-shadow: 18px 0 52px rgba(2, 6, 23, 0.6);
         flex-shrink: 0;
       }
       body:not(.force-mobile) #sidebar.desktop-collapsed {
@@ -110,23 +115,24 @@
         width: 100%;
         border-top: 1px solid rgba(255, 255, 255, 0.14);
         border-radius: 24px 24px 0 0;
-        box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.72);
+        box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.75);
+        padding-bottom: var(--safe-bottom);
       }
       #sidebar[data-sheet="peek"] {
-        height: 84px;
+        height: 76px;
       }
       #sidebar[data-sheet="half"] {
-        height: 54dvh;
+        height: 52dvh;
       }
       #sidebar[data-sheet="full"] {
-        height: 89dvh;
+        height: 88dvh;
       }
       #desktop-top-hud {
         display: none !important;
       }
     }
 
-    /* Принудительный мобильный режим на ПК */
+    /* Принудительный режим предпросмотра смартфона на ПК */
     body.force-mobile #sidebar {
       position: absolute;
       bottom: 0;
@@ -136,16 +142,16 @@
       border-top: 1px solid rgba(255, 255, 255, 0.14);
       border-right: none;
       border-radius: 24px 24px 0 0;
-      box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.72);
+      box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.75);
     }
     body.force-mobile #sidebar[data-sheet="peek"] {
-      height: 84px;
+      height: 76px;
     }
     body.force-mobile #sidebar[data-sheet="half"] {
-      height: 54dvh;
+      height: 52dvh;
     }
     body.force-mobile #sidebar[data-sheet="full"] {
-      height: 89dvh;
+      height: 88dvh;
     }
     body.force-mobile #desktop-top-hud {
       display: none !important;
@@ -177,7 +183,7 @@
     }
 
     #map.night-mode {
-      background: radial-gradient(circle at 50% 40%, #0f172a 0%, #030712 100%);
+      background: radial-gradient(circle at 50% 40%, #0f172a 0%, #020617 100%);
     }
 
     /* Кнопки зума Leaflet в стиле 2026 Spatial UI */
@@ -208,12 +214,18 @@
 
     @media (max-width: 1023px) {
       .leaflet-top.leaflet-left {
-        top: 112px !important;
-        left: 10px !important;
+        top: auto !important;
+        bottom: 92px !important;
+        left: 12px !important;
       }
     }
+    body.force-mobile .leaflet-top.leaflet-left {
+      top: auto !important;
+      bottom: 92px !important;
+      left: 12px !important;
+    }
 
-    /* Слой SVG для линий-выносок поверх карты */
+    /* Слой SVG для коротких аккуратных выносок */
     #callout-svg {
       position: absolute;
       top: 0;
@@ -223,6 +235,7 @@
       pointer-events: none;
       z-index: 420;
       overflow: visible;
+      transition: opacity 0.14s ease;
     }
 
     /* Контейнер для умных неперекрывающихся подписей */
@@ -237,19 +250,19 @@
       overflow: hidden;
     }
 
-    /* Современная плашка подписи страны 2026 (GPU-ускоренная, без скачков) */
+    /* Современная плашка подписи страны 2026 (GPU-ускоренная, без скачков и нитей) */
     .smart-label {
       position: absolute;
       left: 0;
       top: 0;
-      will-change: transform;
+      will-change: transform, opacity;
       pointer-events: auto;
-      cursor: grab;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4.5px;
       padding: 3px 7.5px;
-      border-radius: 7px;
+      border-radius: 8px;
       font-size: 10.5px;
       font-weight: 700;
       letter-spacing: -0.01em;
@@ -259,15 +272,25 @@
       background: rgba(10, 15, 29, 0.92);
       border: 1.25px solid rgba(255, 255, 255, 0.82);
       box-shadow: 0 4px 14px rgba(2, 6, 23, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      transition: opacity 0.16s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    body.drag-labels-mode .smart-label {
+      cursor: grab;
       touch-action: none;
+      border-style: dashed;
+      border-color: #38bdf8;
+    }
+    body.drag-labels-mode .smart-label:active {
+      cursor: grabbing;
     }
 
     @media (max-width: 640px) {
       .smart-label {
         font-size: 9.5px;
-        padding: 2px 5.5px;
-        border-radius: 6px;
+        padding: 2.5px 6px;
+        border-radius: 6.5px;
+        gap: 3.5px;
       }
     }
 
@@ -278,17 +301,20 @@
       box-shadow: 0 3px 10px rgba(15, 23, 42, 0.16);
     }
 
+    .smart-label.lod-hidden {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
     .smart-label:hover,
     .smart-label.highlighted {
+      opacity: 1 !important;
+      pointer-events: auto !important;
       z-index: 999 !important;
       background: #020617;
       color: #ffffff;
       border-color: #38bdf8;
       box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.45), 0 10px 24px rgba(0, 0, 0, 0.65);
-    }
-
-    .smart-label:active {
-      cursor: grabbing;
     }
 
     .label-dot {
@@ -318,16 +344,16 @@
       stroke-linecap: round;
     }
 
-    /* Стеклянные карточки 2026 */
+    /* Стеклянные панели 2026 */
     .glass-pill {
-      background: rgba(10, 15, 29, 0.86);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 10px 30px -5px rgba(2, 6, 23, 0.5);
+      background: rgba(9, 14, 28, 0.88);
+      backdrop-filter: blur(22px) saturate(190%);
+      -webkit-backdrop-filter: blur(22px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      box-shadow: 0 12px 32px -6px rgba(2, 6, 23, 0.6);
     }
 
-    /* Кнопки категорий с мягким свечением */
+    /* Кнопки категорий с мягким откликом */
     .cat-btn {
       position: relative;
       overflow: hidden;
@@ -339,36 +365,43 @@
     .cat-btn:active {
       transform: translateY(0);
     }
+
+    /* Плавающая карточка выбранной страны поверх карты */
+    #floating-country-card {
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease;
+    }
+    #floating-country-card.card-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(16px) scale(0.97);
+    }
   </style>
 </head>
 <body>
   <div id="app-layout">
 
-    <!-- БОКОВАЯ ПАНЕЛЬ (ПК) / ВЫДВИЖНАЯ НИЖНЯЯ ШТОРКА (МОБИЛЬНЫЕ) -->
+    <!-- БОКОВАЯ ПАНЕЛЬ (ПК) / СВАЙП-ШТОРКА (МОБИЛЬНЫЕ) -->
     <aside id="sidebar" data-sheet="peek">
-      <!-- Ручка перетаскивания для мобильной шторки -->
-      <div id="sheet-handle-bar" onclick="cycleMobileSheet()" class="lg:hidden flex flex-col items-center justify-center pt-2 pb-1.5 cursor-pointer bg-slate-950/90 border-b border-white/10 rounded-t-[24px] shrink-0">
-        <div class="w-12 h-1.5 rounded-full bg-slate-600/80 mb-1.5"></div>
+      <!-- Сенсорная ручка для перетаскивания пальцем (Swipe Handle) на мобильных -->
+      <div id="sheet-handle-bar" class="lg:hidden flex flex-col items-center justify-center pt-2 pb-2 cursor-grab active:cursor-grabbing bg-slate-950/95 border-b border-white/10 rounded-t-[24px] shrink-0 touch-none">
+        <div class="w-11 h-1.5 rounded-full bg-slate-600/90 mb-1.5"></div>
         <div class="w-full px-4 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
-            <span id="mobile-sheet-title" class="text-xs font-extrabold text-white tracking-tight">Меню карты и список (82 страны)</span>
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] shrink-0"></span>
+            <span id="mobile-sheet-title" class="text-xs font-extrabold text-white tracking-tight truncate">Все категории (77 государств)</span>
           </div>
-          <span id="mobile-sheet-Toggle-hint" class="text-[11px] font-bold text-sky-400 bg-sky-500/15 px-2.5 py-0.5 rounded-full border border-sky-500/30">
-            ▲ Открыть
-          </span>
+          <button onclick="cycleMobileSheet()" id="mobile-sheet-toggle-hint" class="text-[11px] font-bold text-sky-400 bg-sky-500/15 px-2.5 py-0.5 rounded-full border border-sky-500/30 shrink-0">
+            ▲ Список стран
+          </button>
         </div>
       </div>
 
       <!-- Шапка панели в стиле 2026 -->
-      <div class="relative px-4 py-3.5 border-b border-white/10 bg-gradient-to-br from-slate-900/90 via-slate-950 to-slate-950 shrink-0 overflow-hidden">
-        <div class="
-          pointer-events-none absolute -top-12 -right-12 w-36 h-36 rounded-full
-          bg-sky-500/15 blur-2xl
-        "></div>
+      <div class="relative px-4 py-3 border-b border-white/10 bg-gradient-to-br from-slate-900/90 via-slate-950 to-slate-950 shrink-0 overflow-hidden">
+        <div class="pointer-events-none absolute -top-12 -right-12 w-36 h-36 rounded-full bg-sky-500/15 blur-2xl"></div>
         <div class="relative flex items-center justify-between gap-2">
           <div>
-            <div class="flex items-center gap-1.5 mb-1.5">
+            <div class="flex items-center gap-1.5 mb-1">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/15 text-sky-300 rounded-md border border-sky-500/30">
                 <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
                 Атлас 2026
@@ -388,7 +421,7 @@
             </button>
           </div>
         </div>
-        <div id="status-bar" class="mt-2 flex items-center gap-2 text-[11px] text-sky-400 font-medium">
+        <div id="status-bar" class="mt-1.5 flex items-center gap-2 text-[11px] text-sky-400 font-medium">
           <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping shrink-0"></span>
           <span id="status-text" class="truncate">Загрузка точных векторных границ государств...</span>
         </div>
@@ -396,10 +429,10 @@
 
       <!-- Прокручиваемая область категорий и настроек -->
       <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div class="p-3.5 space-y-2.5 border-b border-white/10 overflow-y-auto max-h-[50%] shrink-0">
+        <div class="p-3.5 space-y-2 border-b border-white/10 overflow-y-auto max-h-[52%] shrink-0">
           <div class="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
             <span>Категории контурной карты:</span>
-            <span id="active-count-badge" class="text-sky-300 bg-sky-950/90 border border-sky-700/50 px-2 py-0.5 rounded-md font-extrabold tabular-nums">77 гос-в (82 п.)</span>
+            <span id="active-count-badge" class="text-sky-300 bg-sky-950/90 border border-sky-700/50 px-2 py-0.5 rounded-md font-extrabold tabular-nums">77 гос-в (87 п.)</span>
           </div>
 
           <!-- Показать все -->
@@ -485,9 +518,9 @@
           </div>
 
           <!-- Панель тонкой настройки подписей и названий -->
-          <div class="pt-2.5 border-t border-white/10 space-y-1.5">
+          <div class="pt-2 border-t border-white/10 space-y-1.5">
             <div class="flex items-center justify-between text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
-              <span>Отображение подписей:</span>
+              <span>Настройка подписей:</span>
               <button id="btn-name-format" onclick="toggleOfficialNamesMode()" class="text-[10px] font-extrabold text-emerald-300 bg-emerald-950/90 border border-emerald-600/50 px-2 py-0.5 rounded-md hover:bg-emerald-900 transition shadow-sm">
                 🏛️ Формат: Полные официальные
               </button>
@@ -497,19 +530,19 @@
               <button id="btn-toggle-all-labels" onclick="toggleAllLabels()" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition flex items-center justify-center gap-1.5 shadow-sm">
                 <span>👁️ Подписи: ВКЛ</span>
               </button>
-              <button id="btn-spread-labels" onclick="toggleSmartSpread()" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center justify-center gap-1.5 shadow-sm">
-                <span>📐 Выноски: ВКЛ</span>
+              <button id="btn-lod-mode" onclick="toggleSmartLOD()" title="При отдалении карты автоматически скрывает накладывающиеся друг на друга плашки, оставляя карту чистой без паутины нитей" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center justify-center gap-1.5 shadow-sm">
+                <span>✨ Авто-чистота: ВКЛ</span>
               </button>
             </div>
 
             <div class="grid grid-cols-3 gap-1.5">
-              <button id="btn-Geo-labels" onclick="presetLabelsOnlyGeo()" title="Оставить подписи только для Островных, Архипелагов и Внутриконтинентальных" class="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/10 transition">
-                🏝️ Только 3–5
+              <button id="btn-drag-mode" onclick="toggleDragLabelsMode()" title="Включить режим ручного перетаскивания подписей" class="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/10 transition truncate">
+                ✋ Двигать: ВЫКЛ
               </button>
-              <button id="btn-paper-mode" onclick="togglePaperMode()" class="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/10 transition">
+              <button id="btn-paper-mode" onclick="togglePaperMode()" class="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/10 transition truncate">
                 📄 Светлый фон
               </button>
-              <button onclick="resetDraggedLabels()" title="Сбросить ручное перетаскивание подписей" class="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/10 transition">
+              <button onclick="resetDraggedLabels()" title="Сбросить ручное перетаскивание подписей" class="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/10 transition truncate">
                 🔄 Сброс мест
               </button>
             </div>
@@ -523,30 +556,11 @@
               id="search-input"
               type="text"
               oninput="renderCountryList()"
-              placeholder="Поиск по официальному названию или столице..."
+              placeholder="Поиск по названию, столице или региону..."
               class="w-full bg-slate-900/95 text-slate-100 placeholder-slate-500 text-xs rounded-xl px-3 py-2 pl-8 pr-7 border border-white/10 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400/40 transition"
             />
             <span class="absolute left-2.5 top-2 text-slate-500 text-xs">🔍</span>
             <button id="clear-search-btn" onclick="clearSearchInput()" class="hidden absolute right-2 top-1.5 text-slate-400 hover:text-white text-xs px-1">✕</button>
-          </div>
-
-          <!-- Карточка выбранной страны (Bento Info Card 2026) -->
-          <div id="country-info-card" class="hidden mb-2.5 p-3 rounded-2xl bg-gradient-to-br from-slate-800/95 via-slate-900/95 to-slate-950/95 border border-sky-500/45 text-xs space-y-2 shadow-xl shrink-0">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <div id="info-title" class="font-extrabold text-xs sm:text-sm text-white leading-snug"></div>
-                <div id="info-short" class="text-[11px] text-sky-300 font-semibold mt-0.5"></div>
-              </div>
-              <button onclick="closeInfoCard()" class="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded-lg bg-slate-900/90 border border-white/10 shrink-0">✕</button>
-            </div>
-            <div id="info-badges" class="flex flex-wrap gap-1 pt-0.5"></div>
-            <div id="info-details" class="text-slate-300 text-[11px] leading-relaxed"></div>
-            <div class="pt-1 flex items-center justify-between border-t border-white/10 text-[10.5px] text-slate-400">
-              <span id="info-coords" class="font-mono"></span>
-              <button onclick="zoomToSelectedCountry()" class="text-sky-300 hover:text-sky-200 font-bold flex items-center gap-1">
-                <span>🎯 Приблизить на карте</span>
-              </button>
-            </div>
           </div>
 
           <!-- Список стран -->
@@ -575,41 +589,43 @@
             <button onclick="flyToRegion('americas')" class="px-2 py-1 rounded-lg hover:bg-white/10 transition">🗽 Америка</button>
             <button onclick="flyToRegion('oceania')" class="px-2 py-1 rounded-lg hover:bg-white/10 transition">🏝️ Океания</button>
           </div>
-
-          <div class="glass-pill hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-200 text-xs font-medium">
-            <span>✨ Плавный зум без скачков • Любую подпись можно перетащить мышью или пальцем</span>
-          </div>
         </div>
 
         <div class="flex items-center gap-2 pointer-events-auto shrink-0">
+          <button onclick="PresetOnlyGeo()" class="glass-pill hidden xl:inline-flex px-3 py-1.5 rounded-xl hover:bg-slate-800/90 text-emerald-300 text-xs font-bold transition">
+            🏝️ Подписи только 3–5
+          </button>
           <button onclick="toggleForceMobileMode()" id="btn-device-mode" class="glass-pill px-3 py-1.5 rounded-xl hover:bg-slate-800/90 text-sky-300 text-xs font-bold transition">
-            📱 Предпросмотр смартфона
+            📱 Мобильный вид
           </button>
         </div>
       </div>
 
-      <!-- ВЕРХНИЙ HUD ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ -->
-      <div id="mobile-top-hud" class="lg:hidden absolute top-2.5 left-2.5 right-2.5 z-[500] flex flex-col gap-2 pointer-events-none">
-        <!-- Верхняя строка управления -->
+      <!-- ВЕРХНИЙ HUD ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (Эргономичный 2026) -->
+      <div id="mobile-top-hud" class="lg:hidden absolute top-2.5 left-2.5 right-2.5 z-[500] flex flex-col gap-1.5 pointer-events-none">
+        <!-- Верхняя компактная панель управления -->
         <div class="flex items-center justify-between gap-1.5 glass-pill rounded-2xl px-3 py-2 pointer-events-auto">
           <div class="flex items-center gap-2 min-w-0">
-            <span class="text-base">🌍</span>
+            <span class="text-base shrink-0">🌍</span>
             <div class="truncate">
-              <div class="text-xs font-extrabold text-white truncate">Политическая карта мира</div>
-              <div class="text-[10px] text-emerald-400 font-semibold truncate">Официальные названия • 6 заданий</div>
+              <div class="text-xs font-extrabold text-white truncate">Атлас мира 2026</div>
+              <div class="text-[10px] text-sky-400 font-semibold truncate">6 заданий • Офиц. названия</div>
             </div>
           </div>
           <div class="flex items-center gap-1 shrink-0">
-            <button onclick="toggleOfficialNamesMode()" id="mob-btn-official" title="Полные / краткие названия" class="px-2 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold">
+            <button onclick="toggleOfficialNamesMode()" id="mob-btn-official" title="Полные / краткие названия" class="px-2 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold">
               🏛️ Полн.
             </button>
-            <button onclick="toggleAllLabels()" id="mob-btn-labels" title="Вкл/Выкл подписи" class="px-2 py-1.5 rounded-xl bg-sky-600/25 text-sky-300 border border-sky-500/40 text-[11px] font-bold">
+            <button onclick="toggleSmartLOD()" id="mob-btn-lod" title="Авто-разгрузка подписей при отдалении" class="px-2 py-1.5 rounded-xl bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 text-[11px] font-bold">
+              ✨ Авто
+            </button>
+            <button onclick="toggleAllLabels()" id="mob-btn-labels" title="Вкл/Выкл все подписи" class="px-2 py-1.5 rounded-xl bg-sky-500/25 text-sky-300 border border-sky-500/40 text-[11px] font-bold">
               👁️
             </button>
-            <button onclick="toggleLegendCollapse()" title="Показать/скрыть легенду" class="px-2 py-1.5 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 text-[11px] font-bold">
+            <button onclick="toggleLegendCollapse()" title="Условные знаки (Легенда)" class="px-2 py-1.5 rounded-xl bg-slate-800/90 text-slate-200 border border-white/10 text-[11px] font-bold">
               🗺️
             </button>
-            <button onclick="resetMapView()" title="Весь мир" class="px-2 py-1.5 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 text-[11px] font-bold">
+            <button onclick="resetMapView()" title="Показать весь мир" class="px-2 py-1.5 rounded-xl bg-slate-800/90 text-slate-200 border border-white/10 text-[11px] font-bold">
               🔄
             </button>
             <button onclick="toggleForceMobileMode()" id="mob-exit-preview" class="hidden px-2 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold">
@@ -618,10 +634,10 @@
           </div>
         </div>
 
-        <!-- Горизонтальная лента категорий -->
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pointer-events-auto pb-0.5">
-          <button onclick="selectCategory('all')" data-mob-cat="all" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-white text-slate-950 shadow-md transition">
-            Все (82)
+        <!-- Горизонтальная лента категорий (Свайп пальцем) -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pointer-events-auto py-0.5">
+          <button onclick="selectCategory('all')" data-mob-cat="all" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-white text-slate-950 shadow-md ring-2 ring-white transition">
+            Все (77)
           </button>
           <button onclick="selectCategory('mon')" data-mob-cat="mon" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-md transition">
             1. Монархии (29)
@@ -639,12 +655,21 @@
             5. Внутриконт. (10)
           </button>
         </div>
+
+        <!-- Быстрый переход по континентам на мобильном -->
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar pointer-events-auto">
+          <button onclick="flyToRegion('europe')" class="shrink-0 px-2.5 py-1 rounded-lg text-[10.5px] font-bold glass-pill text-slate-200 active:scale-95 transition">🏰 Европа</button>
+          <button onclick="flyToRegion('asia')" class="shrink-0 px-2.5 py-1 rounded-lg text-[10.5px] font-bold glass-pill text-slate-200 active:scale-95 transition">🏯 Азия</button>
+          <button onclick="flyToRegion('africa')" class="shrink-0 px-2.5 py-1 rounded-lg text-[10.5px] font-bold glass-pill text-slate-200 active:scale-95 transition">🌍 Африка</button>
+          <button onclick="flyToRegion('americas')" class="shrink-0 px-2.5 py-1 rounded-lg text-[10.5px] font-bold glass-pill text-slate-200 active:scale-95 transition">🗽 Америка</button>
+          <button onclick="flyToRegion('oceania')" class="shrink-0 px-2.5 py-1 rounded-lg text-[10.5px] font-bold glass-pill text-slate-200 active:scale-95 transition">🏝️ Океания</button>
+        </div>
       </div>
 
       <!-- Контейнер карты Leaflet -->
       <div id="map"></div>
 
-      <!-- Слой SVG для линий-выносок и паттернов штриховки -->
+      <!-- Слой SVG для коротких выносок и паттернов штриховки -->
       <svg id="callout-svg" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <!-- Штриховка для стран, входящих сразу в 2 категории (Монархия + Федерация) -->
@@ -664,8 +689,27 @@
       <!-- Слой умных подписей -->
       <div id="labels-container"></div>
 
+      <!-- ПЛАВАЮЩАЯ КАРТОЧКА ВЫБРАННОЙ СТРАНЫ (Удобно и на ПК, и на смартфоне!) -->
+      <div id="floating-country-card" class="card-hidden absolute bottom-22 lg:bottom-5 left-3 right-3 lg:left-5 lg:right-auto lg:w-96 z-[550] rounded-2xl glass-pill p-3.5 text-xs border border-sky-500/45 shadow-2xl">
+        <div class="flex items-start justify-between gap-2.5">
+          <div class="min-w-0">
+            <div id="info-badges" class="flex flex-wrap gap-1 mb-1.5"></div>
+            <div id="info-title" class="font-extrabold text-sm text-white leading-snug"></div>
+            <div id="info-short" class="text-[11.5px] text-sky-300 font-semibold mt-0.5"></div>
+          </div>
+          <button onclick="closeInfoCard()" class="text-slate-400 hover:text-white text-xs w-7 h-7 flex items-center justify-center rounded-xl bg-slate-900/90 border border-white/10 shrink-0 transition">✕</button>
+        </div>
+        <div id="info-details" class="text-slate-300 text-[11.5px] leading-relaxed mt-2 pt-2 border-t border-white/10"></div>
+        <div class="mt-2.5 pt-2 flex items-center justify-between border-t border-white/10 text-[11px] text-slate-400">
+          <span id="info-coords" class="font-mono text-[10.5px]"></span>
+          <button onclick="zoomToSelectedCountry()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold flex items-center gap-1 transition">
+            <span>🎯 Приблизить</span>
+          </button>
+        </div>
+      </div>
+
       <!-- ЗАДАНИЕ 6: Оформленная Легенда карты (Условные знаки) -->
-      <div id="map-legend" class="absolute bottom-24 lg:bottom-4 right-3 lg:right-4 z-[500] w-72 sm:w-80 rounded-2xl glass-pill text-slate-100 p-3.5 transition-all">
+      <div id="map-legend" class="absolute bottom-22 lg:bottom-5 right-3 lg:right-5 z-[520] w-72 sm:w-80 rounded-2xl glass-pill text-slate-100 p-3.5 transition-all">
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
           <div class="flex items-center gap-1.5">
             <span class="text-sm">🗺️</span>
@@ -728,11 +772,11 @@
             </div>
             <div class="flex items-center gap-2">
               <span class="w-4 h-3 rounded-sm border border-white/80 inline-block shrink-0" style="background: repeating-linear-gradient(45deg, #e11d48 0 4px, #d97706 4px 8px);"></span>
-              <span><b>Монархия + Федерация</b> (Королевство Бельгия, Федерация Малайзия, ОАЭ)</span>
+              <span><b>Монархия + Федерация</b> (Бельгия, Малайзия, ОАЭ)</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="w-4 h-3 rounded-sm border border-white/80 inline-block shrink-0" style="background: repeating-linear-gradient(45deg, #e11d48 0 4px, #7c3aed 4px 8px);"></span>
-              <span><b>Монархия + Архипелаг</b> (Соединённое Королевство, Государство Япония)</span>
+              <span><b>Монархия + Архипелаг</b> (Великобритания, Япония)</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="w-4 h-4 rounded-full border-2 border-dashed border-sky-400 bg-sky-400/20 inline-block shrink-0"></span>
@@ -747,13 +791,13 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/topojson-client@3"></script>
   <script>
-    // Определяем, мобильный ли экран при старте
+    // Проверка мобильного режима
     const isSmallScreen = () => window.innerWidth < 1024 || document.body.classList.contains('force-mobile');
 
-    // Инициализируем карту со стандартным SVG-рендерером для поддержки двухцветной штриховки и чётких границ
+    // Инициализация карты со стандартным SVG-рендерером для чёткой двухцветной штриховки
     const map = L.map('map', {
-      center: isSmallScreen() ? [22, 18] : [24, 18],
-      zoom: isSmallScreen() ? 1.85 : 2.4,
+      center: isSmallScreen() ? [20, 18] : [24, 18],
+      zoom: isSmallScreen() ? 1.8 : 2.35,
       zoomSnap: 0.25,
       zoomDelta: 0.5,
       minZoom: 1.5,
@@ -787,84 +831,84 @@
             shortName: "Великобритания",
             lat: 54.2, lng: -2.2, iso3: "GBR", numCode: "826", capital: "Лондон",
             info: "Европа • Парламентская монархия и островное государство-архипелаг",
-            dx: -115, dy: -28
+            dx: -42, dy: -22, priority: 10
           },
           {
             name: "Королевство Испания",
             shortName: "Испания",
             lat: 40.2, lng: -3.7, iso3: "ESP", numCode: "724", capital: "Мадрид",
             info: "Европа • Конституционная парламентская монархия на Пиренейском полуострове",
-            dx: -95, dy: 12
+            dx: -36, dy: 14, priority: 9
           },
           {
             name: "Княжество Андорра",
             shortName: "Андорра",
             lat: 42.55, lng: 1.55, iso3: "AND", numCode: "020", capital: "Андорра-ла-Велья",
             info: "Европа • Парламентское княжество (карликовое государство в Пиренеях)",
-            dx: -98, dy: -6, micro: true
+            dx: -38, dy: -6, micro: true, priority: 3
           },
           {
             name: "Княжество Монако",
             shortName: "Монако",
             lat: 43.73, lng: 7.42, iso3: "MCO", numCode: "492", capital: "Монако",
             info: "Европа • Конституционная монархия, княжество на берегу Лигурийского моря",
-            dx: -78, dy: 30, micro: true
+            dx: -34, dy: 24, micro: true, priority: 3
           },
           {
             name: "Королевство Бельгия",
             shortName: "Бельгия",
             lat: 50.65, lng: 4.5, iso3: "BEL", numCode: "056", capital: "Брюссель",
             info: "Европа • Конституционная парламентская монархия и федеративное государство",
-            dx: -102, dy: -14
+            dx: -40, dy: -10, priority: 7
           },
           {
             name: "Королевство Нидерландов",
             shortName: "Нидерланды",
             lat: 52.2, lng: 5.3, iso3: "NLD", numCode: "528", capital: "Амстердам",
             info: "Европа • Конституционная парламентская монархия в Западной Европе",
-            dx: -98, dy: -32
+            dx: -38, dy: -26, priority: 7
           },
           {
             name: "Великое Герцогство Люксембург",
             shortName: "Люксембург",
             lat: 49.75, lng: 6.1, iso3: "LUX", numCode: "442", capital: "Люксембург",
             info: "Европа • Конституционная монархия (единственное в мире Великое Герцогство)",
-            dx: -105, dy: 4, micro: true
+            dx: -42, dy: 8, micro: true, priority: 4
           },
           {
             name: "Королевство Дания",
             shortName: "Дания",
             lat: 56.0, lng: 9.5, iso3: "DNK", numCode: "208", capital: "Копенгаген",
             info: "Европа • Конституционная парламентская монархия в Северной Европе",
-            dx: -75, dy: -30
+            dx: -36, dy: -22, priority: 7
           },
           {
             name: "Королевство Норвегия",
             shortName: "Норвегия",
             lat: 61.5, lng: 8.5, iso3: "NOR", numCode: "578", capital: "Осло",
             info: "Европа • Конституционная парламентская монархия на Скандинавском полуострове",
-            dx: -65, dy: -28
+            dx: -34, dy: -20, priority: 8
           },
           {
             name: "Королевство Швеция",
             shortName: "Швеция",
             lat: 62.5, lng: 15.5, iso3: "SWE", numCode: "752", capital: "Стокгольм",
             info: "Европа • Конституционная парламентская монархия на Скандинавском полуострове",
-            dx: 38, dy: -28
+            dx: 34, dy: -20, priority: 8
           },
           {
             name: "Княжество Лихтенштейн",
             shortName: "Лихтенштейн",
             lat: 47.14, lng: 9.55, iso3: "LIE", numCode: "438", capital: "Вадуц",
             info: "Европа • Дуалистическая/конституционная монархия, княжество в Альпах",
-            dx: -55, dy: 34, micro: true
+            dx: -28, dy: 26, micro: true, priority: 3
           },
           {
             name: "Государство-город Ватикан",
             shortName: "Ватикан",
             lat: 41.9, lng: 12.45, iso3: "VAT", numCode: "336", capital: "Ватикан",
             info: "Европа • Абсолютная теократическая монархия (папское государство-анклав внутри Рима)",
-            dx: -30, dy: 44, micro: true
+            dx: -24, dy: 30, micro: true, priority: 4
           },
           // Азия (13)
           {
@@ -872,91 +916,91 @@
             shortName: "Япония",
             lat: 36.2, lng: 138.2, iso3: "JPN", numCode: "392", capital: "Токио",
             info: "Азия • Конституционная парламентская монархия и государство-архипелаг",
-            dx: 70, dy: -14
+            dx: 38, dy: -12, priority: 10
           },
           {
             name: "Федерация Малайзия",
             shortName: "Малайзия",
             lat: 4.2, lng: 102.2, iso3: "MYS", numCode: "458", capital: "Куала-Лумпур",
             info: "Азия • Выборная федеративная конституционная монархия в Юго-Восточной Азии",
-            dx: -85, dy: 14
+            dx: -38, dy: 12, priority: 8
           },
           {
             name: "Королевство Таиланд",
             shortName: "Таиланд",
             lat: 15.2, lng: 101.0, iso3: "THA", numCode: "764", capital: "Бангкок",
             info: "Азия • Конституционная парламентская монархия в Юго-Восточной Азии",
-            dx: -82, dy: -6
+            dx: -38, dy: -8, priority: 8
           },
           {
             name: "Королевство Камбоджа",
             shortName: "Камбоджа",
             lat: 12.6, lng: 105.0, iso3: "KHM", numCode: "116", capital: "Пномпень",
             info: "Азия • Конституционная монархия на полуострове Индокитай",
-            dx: 72, dy: 12
+            dx: 38, dy: 12, priority: 7
           },
           {
             name: "Государство Бруней-Даруссалам",
             shortName: "Бруней",
             lat: 4.5, lng: 114.7, iso3: "BRN", numCode: "096", capital: "Бандар-Сери-Бегаван",
             info: "Азия • Абсолютная теократическая монархия (султанат на острове Калимантан)",
-            dx: 78, dy: -10, micro: true
+            dx: 38, dy: -10, micro: true, priority: 5
           },
           {
             name: "Королевство Бутан",
             shortName: "Бутан",
             lat: 27.5, lng: 90.4, iso3: "BTN", numCode: "064", capital: "Тхимпху",
             info: "Азия • Конституционная монархия в Восточных Гималаях",
-            dx: 68, dy: -16
+            dx: 36, dy: -14, priority: 6
           },
           {
             name: "Королевство Саудовская Аравия",
             shortName: "Саудовская Аравия",
             lat: 24.0, lng: 44.5, iso3: "SAU", numCode: "682", capital: "Эр-Рияд",
             info: "Азия • Абсолютная теократическая монархия на Аравийском полуострове",
-            dx: -60, dy: 22
+            dx: -28, dy: 18, priority: 9
           },
           {
             name: "Объединённые Арабские Эмираты",
             shortName: "ОАЭ",
             lat: 24.0, lng: 54.0, iso3: "ARE", numCode: "784", capital: "Абу-Даби",
             info: "Азия • Федеративное монархическое государство, состоящее из 7 эмиратов",
-            dx: 78, dy: 8
+            dx: 38, dy: 6, priority: 8
           },
           {
             name: "Султанат Оман",
             shortName: "Оман",
             lat: 21.0, lng: 57.0, iso3: "OMN", numCode: "512", capital: "Маскат",
             info: "Азия • Абсолютная монархия (султанат) на юго-востоке Аравийского полуострова",
-            dx: 76, dy: 26
+            dx: 38, dy: 22, priority: 7
           },
           {
             name: "Государство Катар",
             shortName: "Катар",
             lat: 25.3, lng: 51.2, iso3: "QAT", numCode: "634", capital: "Доха",
             info: "Азия • Абсолютная монархия (эмират) на Катарском полуострове в Персидском заливе",
-            dx: 78, dy: -6, micro: true
+            dx: 38, dy: -6, micro: true, priority: 5
           },
           {
             name: "Королевство Бахрейн",
             shortName: "Бахрейн",
             lat: 26.05, lng: 50.55, iso3: "BHR", numCode: "048", capital: "Манама",
             info: "Азия • Дуалистическая конституционная монархия на одноимённом архипелаге",
-            dx: 78, dy: -22, micro: true
+            dx: 36, dy: -20, micro: true, priority: 4
           },
           {
             name: "Государство Кувейт",
             shortName: "Кувейт",
             lat: 29.3, lng: 47.5, iso3: "KWT", numCode: "414", capital: "Эль-Кувейт",
             info: "Азия • Конституционная/дуалистическая монархия (эмират) в Юго-Западной Азии",
-            dx: 68, dy: -32, micro: true
+            dx: 34, dy: -24, micro: true, priority: 5
           },
           {
             name: "Иорданское Хашимитское Королевство",
             shortName: "Иордания",
             lat: 31.2, lng: 36.5, iso3: "JOR", numCode: "400", capital: "Амман",
             info: "Азия • Дуалистическая конституционная монархия на Ближнем Востоке",
-            dx: -85, dy: -4
+            dx: -38, dy: -6, priority: 7
           },
           // Африка (3)
           {
@@ -964,21 +1008,21 @@
             shortName: "Марокко",
             lat: 31.8, lng: -6.2, iso3: "MAR", numCode: "504", capital: "Рабат",
             info: "Африка • Дуалистическая конституционная монархия на северо-западе Африки",
-            dx: -82, dy: -10
+            dx: -36, dy: -10, priority: 8
           },
           {
             name: "Королевство Лесото",
             shortName: "Лесото",
             lat: -29.6, lng: 28.2, iso3: "LSO", numCode: "426", capital: "Масеру",
             info: "Африка • Конституционная монархия, государство-анклав внутри ЮАР",
-            dx: -62, dy: 26
+            dx: -34, dy: 20, priority: 7
           },
           {
             name: "Королевство Эсватини",
             shortName: "Эсватини",
             lat: -26.5, lng: 31.5, iso3: "SWZ", numCode: "748", capital: "Мбабане",
             info: "Африка • Абсолютная/дуалистическая монархия в Южной Африке (бывш. Свазиленд)",
-            dx: 75, dy: 10
+            dx: 36, dy: 10, priority: 7
           },
           // Океания (1)
           {
@@ -986,7 +1030,7 @@
             shortName: "Тонга",
             lat: -21.2, lng: -175.2, iso3: "TON", numCode: "776", capital: "Нукуалофа",
             info: "Океания • Конституционная монархия в Полинезии на 177 островах",
-            dx: -40, dy: -24, micro: true
+            dx: -30, dy: -18, micro: true, priority: 7
           }
         ]
       },
@@ -1003,42 +1047,42 @@
             shortName: "Россия",
             lat: 62.0, lng: 92.0, iso3: "RUS", numCode: "643", capital: "Москва",
             info: "Евразия • Крупнейшее по площади федеративное государство мира",
-            dx: 0, dy: -18
+            dx: 0, dy: -14, priority: 10
           },
           {
             name: "Федеративная Республика Германия",
             shortName: "Германия",
             lat: 51.2, lng: 10.4, iso3: "DEU", numCode: "276", capital: "Берлин",
             info: "Европа • Федеративная парламентская республика (16 федеральных земель)",
-            dx: 10, dy: -26
+            dx: 12, dy: -20, priority: 9
           },
           {
             name: "Австрийская Республика",
             shortName: "Австрия",
             lat: 47.6, lng: 14.2, iso3: "AUT", numCode: "040", capital: "Вена",
             info: "Европа • Федеративная парламентская республика в Центральной Европе (9 земель)",
-            dx: 62, dy: 14
+            dx: 32, dy: 12, priority: 7
           },
           {
             name: "Швейцарская Конфедерация",
             shortName: "Швейцария",
             lat: 46.8, lng: 8.2, iso3: "CHE", numCode: "756", capital: "Берн",
             info: "Европа • Федеративная республика (по конституции состоит из 26 кантонов)",
-            dx: -75, dy: 18
+            dx: -34, dy: 14, priority: 7
           },
           {
             name: "Королевство Бельгия",
             shortName: "Бельгия",
             lat: 50.65, lng: 4.5, iso3: "BEL", numCode: "056", capital: "Брюссель",
             info: "Европа • Федеративное королевство (3 региона и 3 языковых сообщества)",
-            dx: -102, dy: -14
+            dx: -40, dy: -10, priority: 7
           },
           {
             name: "Босния и Герцеговина",
             shortName: "Босния и Герцеговина",
             lat: 44.1, lng: 17.8, iso3: "BIH", numCode: "070", capital: "Сараево",
             info: "Европа • Федеративное государство на Балканском полуострове",
-            dx: 68, dy: 30
+            dx: 34, dy: 22, priority: 6
           },
           // Азия (7)
           {
@@ -1046,49 +1090,49 @@
             shortName: "Индия",
             lat: 22.5, lng: 79.0, iso3: "IND", numCode: "356", capital: "Нью-Дели",
             info: "Азия • Федеративная парламентская республика (28 штатов и 8 союзных территорий)",
-            dx: -35, dy: 22
+            dx: -20, dy: 18, priority: 10
           },
           {
             name: "Исламская Республика Пакистан",
             shortName: "Пакистан",
             lat: 30.2, lng: 69.3, iso3: "PAK", numCode: "586", capital: "Исламабад",
             info: "Азия • Федеративная исламская республика в Южной Азии (4 провинции)",
-            dx: -55, dy: -10
+            dx: -32, dy: -10, priority: 8
           },
           {
             name: "Федеративная Демократическая Республика Непал",
             shortName: "Непал",
             lat: 28.3, lng: 84.1, iso3: "NPL", numCode: "524", capital: "Катманду",
             info: "Азия • Федеративная демократическая республика в Гималаях (7 провинций)",
-            dx: 10, dy: -24
+            dx: 10, dy: -20, priority: 7
           },
           {
             name: "Федерация Малайзия",
             shortName: "Малайзия",
             lat: 4.2, lng: 102.2, iso3: "MYS", numCode: "458", capital: "Куала-Лумпур",
             info: "Азия • Федеративная конституционная монархия (13 штатов и 3 федеральные территории)",
-            dx: -85, dy: 14
+            dx: -38, dy: 12, priority: 8
           },
           {
             name: "Республика Союз Мьянма",
             shortName: "Мьянма",
             lat: 21.0, lng: 96.0, iso3: "MMR", numCode: "104", capital: "Нейпьидо",
             info: "Азия • Государство с федеративным устройством в Юго-Восточной Азии",
-            dx: 48, dy: -10
+            dx: 30, dy: -10, priority: 7
           },
           {
             name: "Республика Ирак",
             shortName: "Ирак",
             lat: 33.2, lng: 43.7, iso3: "IRQ", numCode: "368", capital: "Багдад",
             info: "Азия • Федеративная парламентская республика на Ближнем Востоке",
-            dx: -45, dy: -24
+            dx: -28, dy: -18, priority: 7
           },
           {
             name: "Объединённые Арабские Эмираты",
             shortName: "ОАЭ",
             lat: 24.0, lng: 54.0, iso3: "ARE", numCode: "784", capital: "Абу-Даби",
             info: "Азия • Федеративное государство из 7 абсолютных монархий (эмиратов)",
-            dx: 78, dy: 8
+            dx: 38, dy: 6, priority: 8
           },
           // Африка (6)
           {
@@ -1096,42 +1140,42 @@
             shortName: "Нигерия",
             lat: 9.2, lng: 8.2, iso3: "NGA", numCode: "566", capital: "Абуджа",
             info: "Африка • Федеративная президентская республика в Западной Африке (36 штатов)",
-            dx: -45, dy: 22
+            dx: -28, dy: 18, priority: 9
           },
           {
             name: "Федеративная Демократическая Республика Эфиопия",
             shortName: "Эфиопия",
             lat: 9.0, lng: 39.5, iso3: "ETH", numCode: "231", capital: "Аддис-Абеба",
             info: "Африка • Федеративная демократическая республика в Восточной Африке",
-            dx: 62, dy: -12
+            dx: 34, dy: -10, priority: 9
           },
           {
             name: "Республика Судан",
             shortName: "Судан",
             lat: 15.8, lng: 30.2, iso3: "SDN", numCode: "729", altCode: "736", capital: "Хартум",
             info: "Африка • Федеративная республика в Северо-Восточной Африке (18 штатов)",
-            dx: -30, dy: -14
+            dx: -22, dy: -12, priority: 8
           },
           {
             name: "Республика Южный Судан",
             shortName: "Южный Судан",
             lat: 7.2, lng: 30.2, iso3: "SSD", numCode: "728", capital: "Джуба",
             info: "Африка • Федеративная республика в Восточной Африке",
-            dx: -30, dy: 20
+            dx: -22, dy: 18, priority: 7
           },
           {
             name: "Федеративная Республика Сомали",
             shortName: "Сомали",
             lat: 5.2, lng: 46.2, iso3: "SOM", numCode: "706", capital: "Могадишо",
             info: "Африка • Федеративная республика на полуострове Сомали",
-            dx: 68, dy: 10
+            dx: 38, dy: 10, priority: 8
           },
           {
             name: "Союз Коморских Островов",
             shortName: "Коморы",
             lat: -11.7, lng: 43.3, iso3: "COM", numCode: "174", capital: "Морони",
             info: "Африка • Федеративная президентская республика в Мозамбикском проливе",
-            dx: -68, dy: -14, micro: true
+            dx: -36, dy: -12, micro: true, priority: 6
           },
           // Америка (7)
           {
@@ -1139,49 +1183,49 @@
             shortName: "Канада",
             lat: 58.0, lng: -106.0, iso3: "CAN", numCode: "124", capital: "Оттава",
             info: "Северная Америка • Федеративное государство (10 провинций и 3 территории)",
-            dx: 0, dy: -16
+            dx: 0, dy: -14, priority: 10
           },
           {
             name: "Соединённые Штаты Америки",
             shortName: "США",
             lat: 39.5, lng: -98.5, iso3: "USA", numCode: "840", capital: "Вашингтон",
             info: "Северная Америка • Федеративная президентская республика (50 штатов и федеральный округ)",
-            dx: 0, dy: -14
+            dx: 0, dy: -12, priority: 10
           },
           {
             name: "Мексиканские Соединённые Штаты",
             shortName: "Мексика",
             lat: 23.6, lng: -102.5, iso3: "MEX", numCode: "484", capital: "Мехико",
             info: "Северная Америка • Федеративная президентская республика (31 штат и Мехико)",
-            dx: -75, dy: 14
+            dx: -36, dy: 14, priority: 9
           },
           {
             name: "Федеративная Республика Бразилия",
             shortName: "Бразилия",
             lat: -11.5, lng: -52.0, iso3: "BRA", numCode: "076", capital: "Бразилиа",
             info: "Южная Америка • Крупнейшая федеративная республика Южной Америки (26 штатов)",
-            dx: 45, dy: 0
+            dx: 24, dy: 0, priority: 10
           },
           {
             name: "Аргентинская Республика",
             shortName: "Аргентина",
             lat: -35.0, lng: -65.0, iso3: "ARG", numCode: "032", capital: "Буэнос-Айрес",
             info: "Южная Америка • Федеративная президентская республика (23 провинции)",
-            dx: 0, dy: 18
+            dx: 0, dy: 16, priority: 10
           },
           {
             name: "Боливарианская Республика Венесуэла",
             shortName: "Венесуэла",
             lat: 7.2, lng: -66.0, iso3: "VEN", numCode: "862", capital: "Каракас",
             info: "Южная Америка • Федеративная президентская республика (23 штата)",
-            dx: 48, dy: -20
+            dx: 28, dy: -18, priority: 8
           },
           {
             name: "Федерация Сент-Китс и Невис",
             shortName: "Сент-Китс и Невис",
             lat: 17.3, lng: -62.7, iso3: "KNA", numCode: "659", capital: "Бастер",
             info: "Америка • Самое маленькое федеративное государство мира в Карибском море",
-            dx: 85, dy: 8, micro: true
+            dx: 38, dy: 8, micro: true, priority: 6
           },
           // Австралия и Океания (2)
           {
@@ -1189,14 +1233,14 @@
             shortName: "Австралия",
             lat: -25.0, lng: 134.0, iso3: "AUS", numCode: "036", capital: "Канберра",
             info: "Австралия и Океания • Федеративное государство (6 штатов и 2 материковые территории)",
-            dx: 0, dy: -14
+            dx: 0, dy: -12, priority: 10
           },
           {
             name: "Федеративные Штаты Микронезии",
             shortName: "ФШ Микронезии",
             lat: 6.9, lng: 158.2, iso3: "FSM", numCode: "583", capital: "Паликир",
             info: "Океания • Федеративное государство из 4 штатов на Каролинских островах",
-            dx: -55, dy: -20, micro: true
+            dx: -32, dy: -16, micro: true, priority: 7
           }
         ]
       },
@@ -1212,70 +1256,70 @@
             shortName: "Исландия",
             lat: 65.0, lng: -18.5, iso3: "ISL", numCode: "352", capital: "Рейкьявик",
             info: "Европа • Островное государство на одноимённом острове в Северной Атлантике",
-            dx: 0, dy: -24
+            dx: 0, dy: -20, priority: 9
           },
           {
             name: "Республика Ирландия",
             shortName: "Ирландия",
             lat: 53.3, lng: -8.0, iso3: "IRL", numCode: "372", capital: "Дублин",
             info: "Европа • Островное государство, занимающее большую часть острова Ирландия",
-            dx: -88, dy: -12
+            dx: -38, dy: -10, priority: 8
           },
           {
             name: "Республика Кипр",
             shortName: "Кипр",
             lat: 35.1, lng: 33.4, iso3: "CYP", numCode: "196", capital: "Никосия",
             info: "Азия/Европа • Островное государство в восточной части Средиземного моря",
-            dx: -68, dy: -20, micro: true
+            dx: -34, dy: -16, micro: true, priority: 7
           },
           {
             name: "Демократическая Социалистическая Республика Шри-Ланка",
             shortName: "Шри-Ланка",
             lat: 7.8, lng: 80.7, iso3: "LKA", numCode: "144", capital: "Шри-Джаяварденепура-Котте",
             info: "Азия • Островное государство в Индийском океане у южной оконечности Индостана",
-            dx: 55, dy: 24
+            dx: 34, dy: 20, priority: 8
           },
           {
             name: "Республика Мадагаскар",
             shortName: "Мадагаскар",
             lat: -19.2, lng: 46.7, iso3: "MDG", numCode: "450", capital: "Антананариву",
             info: "Африка • Крупнейшее в мире государство, расположенное на одном острове",
-            dx: 68, dy: 16
+            dx: 36, dy: 14, priority: 9
           },
           {
             name: "Республика Куба",
             shortName: "Куба",
             lat: 21.8, lng: -79.5, iso3: "CUB", numCode: "192", capital: "Гавана",
             info: "Америка • Островное государство в северной части Карибского моря",
-            dx: -75, dy: -16
+            dx: -36, dy: -14, priority: 9
           },
           {
             name: "Ямайка",
             shortName: "Ямайка",
             lat: 18.15, lng: -77.3, iso3: "JAM", numCode: "388", capital: "Кингстон",
             info: "Америка • Островное государство в Карибском море в группе Больших Антильских островов",
-            dx: -68, dy: 24
+            dx: -34, dy: 20, priority: 7
           },
           {
             name: "Республика Гаити",
             shortName: "Гаити",
             lat: 19.0, lng: -72.7, iso3: "HTI", numCode: "332", capital: "Порт-о-Пренс",
             info: "Америка • Островное государство в западной части острова Гаити",
-            dx: -35, dy: -34
+            dx: -24, dy: -24, priority: 6
           },
           {
             name: "Доминиканская Республика",
             shortName: "Доминиканская Респ.",
             lat: 18.9, lng: -70.2, iso3: "DOM", numCode: "214", capital: "Санто-Доминго",
             info: "Америка • Островное государство в восточной части острова Гаити",
-            dx: 72, dy: -20
+            dx: 36, dy: -16, priority: 7
           },
           {
             name: "Республика Сингапур",
             shortName: "Сингапур",
             lat: 1.35, lng: 103.8, iso3: "SGP", numCode: "702", capital: "Сингапур",
             info: "Азия • Островное город-государство в Юго-Восточной Азии",
-            dx: -75, dy: 30, micro: true
+            dx: -36, dy: 22, micro: true, priority: 7
           }
         ]
       },
@@ -1291,70 +1335,70 @@
             shortName: "Индонезия",
             lat: -2.5, lng: 118.0, iso3: "IDN", numCode: "360", capital: "Джакарта",
             info: "Азия • Крупнейшее в мире государство-архипелаг (более 17 500 островов)",
-            dx: 0, dy: 28
+            dx: 0, dy: 20, priority: 10
           },
           {
             name: "Республика Филиппины",
             shortName: "Филиппины",
             lat: 12.5, lng: 122.0, iso3: "PHL", numCode: "608", capital: "Манила",
             info: "Азия • Государство-архипелаг в Тихом океане (более 7 600 островов)",
-            dx: 72, dy: 0
+            dx: 38, dy: 0, priority: 9
           },
           {
             name: "Государство Япония",
             shortName: "Япония",
             lat: 36.2, lng: 138.2, iso3: "JPN", numCode: "392", capital: "Токио",
             info: "Азия • Островное государство-архипелаг на Японских островах",
-            dx: 70, dy: -14
+            dx: 38, dy: -12, priority: 10
           },
           {
             name: "Соединённое Королевство Великобритании и Северной Ирландии",
             shortName: "Великобритания",
             lat: 54.2, lng: -2.2, iso3: "GBR", numCode: "826", capital: "Лондон",
             info: "Европа • Островное государство-архипелаг на Британских островах",
-            dx: -115, dy: -28
+            dx: -42, dy: -22, priority: 10
           },
           {
             name: "Новая Зеландия",
             shortName: "Новая Зеландия",
             lat: -41.5, lng: 173.0, iso3: "NZL", numCode: "554", capital: "Веллингтон",
             info: "Океания • Государство-архипелаг в юго-западной части Тихого океана",
-            dx: -55, dy: -22
+            dx: -34, dy: -18, priority: 9
           },
           {
             name: "Мальдивская Республика",
             shortName: "Мальдивы",
             lat: 3.2, lng: 73.2, iso3: "MDV", numCode: "462", capital: "Мале",
             info: "Азия • Государство-архипелаг из 26 коралловых атоллов в Индийском океане",
-            dx: -62, dy: 26, micro: true
+            dx: -34, dy: 20, micro: true, priority: 8
           },
           {
             name: "Содружество Багамских Островов",
             shortName: "Багамские О-ва",
             lat: 24.5, lng: -77.4, iso3: "BHS", numCode: "044", capital: "Нассау",
             info: "Америка • Государство-архипелаг в Атлантическом океане (около 700 островов)",
-            dx: 72, dy: -28, micro: true
+            dx: 36, dy: -20, micro: true, priority: 7
           },
           {
             name: "Республика Фиджи",
             shortName: "Фиджи",
             lat: -17.8, lng: 178.0, iso3: "FJI", numCode: "242", capital: "Сува",
             info: "Океания • Государство-архипелаг в Меланезии (более 300 островов)",
-            dx: -55, dy: -20, micro: true
+            dx: -32, dy: -18, micro: true, priority: 8
           },
           {
             name: "Республика Кабо-Верде",
             shortName: "Кабо-Верде",
             lat: 16.0, lng: -24.0, iso3: "CPV", numCode: "132", capital: "Прая",
             info: "Африка • Государство-архипелаг на островах Зелёного Мыса в Атлантическом океане",
-            dx: -68, dy: -18, micro: true
+            dx: -36, dy: -14, micro: true, priority: 8
           },
           {
             name: "Республика Сейшельские Острова",
             shortName: "Сейшельские О-ва",
             lat: -4.6, lng: 55.5, iso3: "SYC", numCode: "690", capital: "Виктория",
             info: "Африка • Государство-архипелаг в западной части Индийского океана (115 островов)",
-            dx: 75, dy: -14, micro: true
+            dx: 38, dy: -12, micro: true, priority: 8
           }
         ]
       },
@@ -1370,76 +1414,76 @@
             shortName: "Казахстан",
             lat: 48.2, lng: 67.0, iso3: "KAZ", numCode: "398", capital: "Астана",
             info: "Евразия • Крупнейшее по площади внутриконтинентальное государство мира",
-            dx: 0, dy: -16
+            dx: 0, dy: -14, priority: 10
           },
           {
             name: "Монголия",
             shortName: "Монголия",
             lat: 46.8, lng: 104.0, iso3: "MNG", numCode: "496", capital: "Улан-Батор",
             info: "Азия • Вторая по площади внутриконтинентальная страна мира в Центральной Азии",
-            dx: 0, dy: -14
+            dx: 0, dy: -14, priority: 10
           },
           {
             name: "Республика Узбекистан",
             shortName: "Узбекистан",
             lat: 41.5, lng: 64.0, iso3: "UZB", numCode: "860", capital: "Ташкент",
             info: "Азия • Внутриконтинентальное государство, окружённое только сухопутными странами",
-            dx: -55, dy: 10
+            dx: -32, dy: 12, priority: 8
           },
           {
             name: "Исламский Эмират Афганистан",
             shortName: "Афганистан",
             lat: 33.8, lng: 65.5, iso3: "AFG", numCode: "004", capital: "Кабул",
             info: "Азия • Внутриконтинентальное горное государство на Среднем Востоке",
-            dx: -45, dy: 18
+            dx: -28, dy: 16, priority: 8
           },
           {
             name: "Республика Беларусь",
             shortName: "Беларусь",
             lat: 53.7, lng: 28.0, iso3: "BLR", numCode: "112", capital: "Минск",
             info: "Европа • Крупнейшее внутриконтинентальное государство в Восточной Европе",
-            dx: 48, dy: -18
+            dx: 32, dy: -14, priority: 9
           },
           {
             name: "Чешская Республика",
             shortName: "Чехия",
             lat: 49.8, lng: 15.5, iso3: "CZE", numCode: "203", capital: "Прага",
             info: "Европа • Внутриконтинентальное государство в Центральной Европе",
-            dx: 55, dy: -16
+            dx: 34, dy: -14, priority: 8
           },
           {
             name: "Республика Чад",
             shortName: "Чад",
             lat: 15.2, lng: 18.8, iso3: "TCD", numCode: "148", capital: "Нджамена",
             info: "Африка • Крупное внутриконтинентальное государство в Центральной Африке",
-            dx: 18, dy: -14
+            dx: 16, dy: -12, priority: 9
           },
           {
             name: "Республика Нигер",
             shortName: "Нигер",
             lat: 17.2, lng: 8.2, iso3: "NER", numCode: "562", capital: "Ниамей",
             info: "Африка • Внутриконтинентальное государство в Западной Африке",
-            dx: -14, dy: -16
+            dx: -14, dy: -14, priority: 9
           },
           {
             name: "Республика Мали",
             shortName: "Мали",
             lat: 17.5, lng: -3.5, iso3: "MLI", numCode: "466", capital: "Бамако",
             info: "Африка • Внутриконтинентальное государство в Западной Африке",
-            dx: -50, dy: -12
+            dx: -32, dy: -12, priority: 9
           },
           {
             name: "Многонациональное Государство Боливия",
             shortName: "Боливия",
             lat: -16.5, lng: -64.5, iso3: "BOL", numCode: "068", capital: "Сукре (Ла-Пас)",
             info: "Южная Америка • Крупнейшее внутриконтинентальное государство Южной Америки",
-            dx: -68, dy: 0
+            dx: -36, dy: 0, priority: 9
           }
         ]
       }
     };
 
-    // Объединяем данные по уникальным странам (77 уникальных государств, 82 позиции)
+    // Объединение данных по уникальным странам (77 государств, 87 позиций в 5 заданиях)
     const unifiedCountriesMap = new Map();
 
     Object.entries(categories).forEach(([catKey, catObj]) => {
@@ -1468,17 +1512,17 @@
     let baseCountriesLayer = null;
     const markerLayerGroup = L.layerGroup().addTo(map);
     const haloLayerGroup = L.layerGroup().addTo(map);
-    const countryCircleMarkers = new Map(); // numCode -> L.circleMarker
+    const countryCircleMarkers = new Map();
 
     let currentCategory = 'all';
     let allLabelsEnabled = true;
-    let smartSpreadEnabled = true;
+    let smartLODEnabled = true; // Умная разгрузка при отдалении карты (без наложений и нитей)
+    let dragLabelsModeEnabled = false; // Защита от случайного сдвига подписей пальцем на телефоне
     let paperModeEnabled = false;
-    let useOfficialNames = true; // По умолчанию ВКЛЮЧЕНЫ полные официальные названия
+    let useOfficialNames = true;
     let selectedCountryCode = null;
     let hoveredCountryCode = null;
 
-    // Видимость подписей по каждой из 5 категорий отдельно
     const groupLabelVisibility = {
       mon: true,
       fed: true,
@@ -1487,24 +1531,16 @@
       lnd: true
     };
 
-    // Пользовательские смещения подписей (при перетаскивании мышкой или пальцем)
+    // Пользовательские смещения подписей (если включён режим ручного перетаскивания)
     const userLabelOffsets = new Map();
-    // Кэш плавно интерполированных смещений, чтобы исключить скачки при зуме
-    const resolvedOffsetsCache = new Map();
 
-    // Возвращает отображаемое имя в зависимости от режима (Полное официальное / Краткое)
     function getDisplayName(country) {
       return useOfficialNames ? country.name : (country.shortName || country.name);
     }
 
     // ============================================================================
-    // ИСПРАВЛЕНИЕ БАГА 180-ГО МЕРИДИАНА (АНТИМЕРИДИАНА) БЕЗ ГОРИЗОНТАЛЬНЫХ ПОЛОС
+    // РАЗРЕЗАНИЕ ПОЛИГОНОВ ПО 180-МУ МЕРИДИАНУ (БЕЗ ГОРИЗОНТАЛЬНЫХ ПОЛОС)
     // ============================================================================
-    // Ранее в ringCrosses180 стояла проверка:
-    //   const spansWholeWorld = ring.some(pt => Math.abs(pt[0]) < 30);
-    // Из-за неё контур Российской Федерации (начинающийся в Европе на 19.6°–27.3° в.д.,
-    // что меньше 30°) ошибочно пропускался и НЕ разрезался по 180° меридиану на Чукотке,
-    // создавая оранжевую горизонтальную полосу через всю карту от +180° до -180°.
     function sanitizeWorldGeoJSON(geojson) {
       function clampLat(lat) {
         return Math.max(-84.2, Math.min(84.2, lat));
@@ -1514,7 +1550,6 @@
         return ring.map(([lon, lat]) => [lon, clampLat(lat)]);
       }
 
-      // Любой скачок долготы > 180° между соседними вершинами означает пересечение 180-го меридиана
       function ringCrosses180(ring) {
         if (!ring || ring.length < 2) return false;
         for (let i = 0; i < ring.length - 1; i++) {
@@ -1524,16 +1559,11 @@
         }
         const first = ring[0];
         const last = ring[ring.length - 1];
-        if (Math.abs(first[0] - last[0]) > 180) {
-          return true;
-        }
-        return false;
+        return Math.abs(first[0] - last[0]) > 180;
       }
 
-      // Точное разрезание полигона по 180-му меридиану с линейной интерполяцией широты на ±180°
       function splitAntimeridianRing(ring) {
         if (!ring || ring.length < 3) return [];
-
         const closed = [...ring];
         const fPt = closed[0];
         const lPt = closed[closed.length - 1];
@@ -1549,18 +1579,14 @@
           const [lon1, rawLat1] = closed[i];
           const lat1 = clampLat(rawLat1);
 
-          if (lon1 >= 0) {
-            east.push([lon1, lat1]);
-          } else {
-            west.push([lon1, lat1]);
-          }
+          if (lon1 >= 0) east.push([lon1, lat1]);
+          else west.push([lon1, lat1]);
 
           if (i < n - 1) {
             const [lon2, rawLat2] = closed[i + 1];
             const lat2 = clampLat(rawLat2);
 
             if (Math.abs(lon2 - lon1) > 180) {
-              // Интерполируем точную широту пересечения на меридиане ±180°
               const d1 = 180 - Math.abs(lon1);
               const d2 = 180 - Math.abs(lon2);
               const total = d1 + d2;
@@ -1582,23 +1608,18 @@
         if (east.length >= 3) {
           const first = east[0];
           const last = east[east.length - 1];
-          if (first[0] !== last[0] || first[1] !== last[1]) {
-            east.push([first[0], first[1]]);
-          }
+          if (first[0] !== last[0] || first[1] !== last[1]) east.push([first[0], first[1]]);
           if (east.length >= 4) result.push(east);
         }
         if (west.length >= 3) {
           const first = west[0];
           const last = west[west.length - 1];
-          if (first[0] !== last[0] || first[1] !== last[1]) {
-            west.push([first[0], first[1]]);
-          }
+          if (first[0] !== last[0] || first[1] !== last[1]) west.push([first[0], first[1]]);
           if (west.length >= 4) result.push(west);
         }
         return result;
       }
 
-      // Исключаем Антарктиду (код 010)
       geojson.features = geojson.features.filter(f => String(f.id) !== '010');
 
       geojson.features.forEach(f => {
@@ -1617,11 +1638,7 @@
           f.geometry.coordinates.forEach(poly => {
             if (!poly || !poly[0]) return;
             if (!ringCrosses180(poly[0])) {
-              cleanPolys.push(
-                poly
-                  .filter(r => !ringCrosses180(r))
-                  .map(clampLatitudes)
-              );
+              cleanPolys.push(poly.filter(r => !ringCrosses180(r)).map(clampLatitudes));
             } else {
               const parts = splitAntimeridianRing(poly[0]);
               parts.forEach(p => cleanPolys.push([p]));
@@ -1634,26 +1651,25 @@
       return geojson;
     }
 
-    // Загружаем контуры стран мира
+    // Загрузка векторных границ стран мира
     fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
       .then(r => r.json())
       .then(topology => {
         const rawGeo = topojson.feature(topology, topology.objects.countries);
         worldGeoJSON = sanitizeWorldGeoJSON(rawGeo);
         const statusBar = document.getElementById('status-bar');
-        statusBar.className = 'mt-2 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold';
+        statusBar.className = 'mt-1.5 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold';
         statusBar.innerHTML = '<span>✓ Векторная карта готова • Официальные названия стран мира</span>';
         drawVectorMap();
         renderMarkersAndLabels();
       })
       .catch(() => {
         const statusBar = document.getElementById('status-bar');
-        statusBar.className = 'mt-2 flex items-center gap-2 text-[11px] text-amber-400 font-semibold';
-        statusBar.innerHTML = '<span>⚠️ Контуры недоступны, работаем в режиме маркеров и подписей</span>';
+        statusBar.className = 'mt-1.5 flex items-center gap-2 text-[11px] text-amber-400 font-semibold';
+        statusBar.innerHTML = '<span>⚠️ Контуры недоступны, активен режим маркеров и подписей</span>';
         renderMarkersAndLabels();
       });
 
-    // Определение заливки страны на контурной карте
     function getCountryFillStyle(country) {
       if (!country) {
         return {
@@ -1765,11 +1781,11 @@
 
         if (country.micro) {
           L.circleMarker([country.lat, country.lng], {
-            radius: 11,
+            radius: 10,
             fillColor: primaryColor,
-            fillOpacity: 0.22,
+            fillOpacity: 0.2,
             color: primaryColor,
-            weight: 1.4,
+            weight: 1.3,
             dashArray: '3,3',
             interactive: false
           }).addTo(haloLayerGroup);
@@ -1779,7 +1795,7 @@
           radius: 5.5,
           fillColor: primaryColor,
           color: secondaryCat ? secondaryColor : '#ffffff',
-          weight: secondaryCat ? 2.5 : 1.8,
+          weight: secondaryCat ? 2.4 : 1.7,
           fillOpacity: 1
         });
 
@@ -1792,15 +1808,21 @@
       });
 
       syncLabelDOMNodes();
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     }
 
     // ============================================================================
-    // ДВИЖОК ПОДПИСЕЙ И ВЫНОСОК БЕЗ СКАЧКОВ ПРИ ЗУМЕ (ZERO-JUMP ENGINE)
+    // НОВЫЙ КАРТОГРАФИЧЕСКИЙ ДВИЖОК ПОДПИСЕЙ 2026 (БЕЗ НИТЕЙ, СКАЧКОВ И ЗАПАЗДЫВАНИЙ)
     // ============================================================================
+    // Вместо инерционного «плавания» после зума и разлёта плашек на 300 пикселей:
+    // 1. Каждая подпись жёстко привязана к своей стране в радиусе MAX_TETHER_PX (не более 38px).
+    // 2. Линия-выноска рисуется до БЛИЖАЙШЕГО КРАЯ плашки, а не до её центра, поэтому она короткая и аккуратная.
+    // 3. Во время анимации зума (pinch-zoom / колесо мыши) координаты обновляются мгновенно в каждом кадре без отставания.
+    // 4. В режиме «Авто-чистота (LOD)» при сильном отдалении карты тесные кластеры в Европе и Персидском заливе
+    //    автоматически сокращают длинные титулы или временно скрывают перекрывающиеся микрогосударства до приближения/наведения.
     const labelNodesMap = new Map();
-    let rafId = null;
+    let zoomRafId = null;
     let isZoomAnimating = false;
 
     function syncLabelDOMNodes() {
@@ -1855,32 +1877,30 @@
         svgGroup.appendChild(mainLine);
 
         const rect = el.getBoundingClientRect();
-        const w = Math.max(54, rect.width || getDisplayName(country).length * 6.5 + 22);
+        const fullW = Math.max(52, rect.width || getDisplayName(country).length * 6.5 + 22);
         const h = Math.max(19, rect.height || 20);
-
-        const cached = resolvedOffsetsCache.get(country.numCode);
-        const initDx = cached ? cached.dx : (country.dx || 0);
-        const initDy = cached ? cached.dy : (country.dy || -16);
 
         const nodeObj = {
           code: country.numCode,
           el,
+          nameSpan,
           haloLine,
           mainLine,
           country,
-          w,
+          fullW,
+          w: fullW,
           h,
-          curDx: initDx,
-          curDy: initDy,
-          targetDx: initDx,
-          targetDy: initDy
+          dx: 0,
+          dy: -16,
+          lodHidden: false
         };
 
-        setupLabelDragAndClick(nodeObj);
+        setupLabelInteraction(nodeObj);
         labelNodesMap.set(country.numCode, nodeObj);
       });
     }
 
+    // Точное экранное положение маркера страны (работает даже во время CSS-анимации зума Leaflet)
     function getExactAnchorScreenPoint(country) {
       const marker = countryCircleMarkers.get(country.numCode);
       if (marker && marker._path) {
@@ -1896,129 +1916,200 @@
       return map.latLngToContainerPoint([country.lat, country.lng]);
     }
 
-    function recomputeCollisionTargets() {
+    // Находит ближайшую точку на границе прямоугольника плашки к точке маркера (чтобы выноска не тянулась сквозь текст)
+    function getClosestPointOnRectEdge(anchorX, anchorY, centerX, centerY, w, h) {
+      const halfW = w / 2;
+      const halfH = h / 2;
+      const clampedX = Math.max(centerX - halfW, Math.min(centerX + halfW, anchorX));
+      const clampedY = Math.max(centerY - halfH, Math.min(centerY + halfH, anchorY));
+      return { x: clampedX, y: clampedY };
+    }
+
+    // Детерминированный расчёт позиций подписей без длинных нитей и каши
+    function computeCleanLabelLayout() {
       if (labelNodesMap.size === 0) return;
 
       const mapSize = map.getSize();
       const zoom = map.getZoom();
-      const mobileScale = isSmallScreen() ? 0.76 : 1.0;
-      const spreadFactor = smartSpreadEnabled
-        ? Math.max(0.58, Math.min(1.25, (2.9 / Math.max(1.8, zoom)) * mobileScale))
-        : 0;
+      const mobile = isSmallScreen();
 
-      const items = [];
+      // При отдалении карты расстояние от точки до подписи УМЕНЬШАЕТСЯ (никаких длинных нитей!)
+      const zoomScale = Math.max(0.45, Math.min(1.15, (zoom - 1.1) / 2.6));
+      const maxEdgeGap = mobile ? 26 : 36; // Максимальная длина самой линии-выноски в пикселях
 
-      labelNodesMap.forEach(node => {
-        const { country } = node;
-        const anchor = getExactAnchorScreenPoint(country);
-        const userOffset = userLabelOffsets.get(country.numCode);
-
-        const baseDx = userOffset ? userOffset.dx : (country.dx || 0) * spreadFactor;
-        const baseDy = userOffset ? userOffset.dy : (country.dy || -16) * spreadFactor;
-
-        items.push({
-          node,
-          anchorX: anchor.x,
-          anchorY: anchor.y,
-          x: anchor.x + baseDx,
-          y: anchor.y + baseDy,
-          baseX: anchor.x + baseDx,
-          baseY: anchor.y + baseDy,
-          w: node.w,
-          h: node.h,
-          locked: Boolean(userOffset)
-        });
+      // Сортируем страны по приоритету: выбранная -> наведённая -> крупные державы -> малые государства
+      const nodesList = Array.from(labelNodesMap.values());
+      nodesList.sort((a, b) => {
+        const aFocus = (a.code === selectedCountryCode || a.code === hoveredCountryCode) ? 1000 : 0;
+        const bFocus = (b.code === selectedCountryCode || b.code === hoveredCountryCode) ? 1000 : 0;
+        if (aFocus !== bFocus) return bFocus - aFocus;
+        return (b.country.priority || 5) - (a.country.priority || 5);
       });
 
-      if (smartSpreadEnabled && items.length > 1) {
-        const iterations = 36;
-        const padX = 6;
-        const padY = 4;
+      const placedBoxes = [];
 
-        for (let iter = 0; iter < iterations; iter++) {
-          for (let i = 0; i < items.length; i++) {
-            for (let j = i + 1; j < items.length; j++) {
-              const a = items[i];
-              const b = items[j];
+      // 8 фиксированных аккуратных направлений вокруг маркера страны
+      const candidateAngles = [
+        null, // 0: Предпочтительное направление страны
+        -Math.PI / 2,      // Север
+        Math.PI / 2,       // Юг
+        0,                 // Восток
+        Math.PI,           // Запад
+        -Math.PI / 4,      // Северо-Восток
+        -3 * Math.PI / 4,  // Северо-Запад
+        Math.PI / 4,       // Юго-Восток
+        3 * Math.PI / 4    // Юго-Запад
+      ];
 
-              const dx = b.x - a.x;
-              const dy = b.y - a.y;
-              const minDistX = (a.w + b.w) / 2 + padX;
-              const minDistY = (a.h + b.h) / 2 + padY;
+      nodesList.forEach(node => {
+        const { country } = node;
+        const isFocused = (node.code === selectedCountryCode || node.code === hoveredCountryCode);
+        const anchor = getExactAnchorScreenPoint(country);
 
-              if (Math.abs(dx) < minDistX && Math.abs(dy) < minDistY) {
-                const overlapX = minDistX - Math.abs(dx);
-                const overlapY = minDistY - Math.abs(dy);
+        // Если на малом зуме включена «Авто-чистота», для длинных названий в тесных кластерах можем использовать компактное имя
+        const fullText = getDisplayName(country);
+        const shortText = country.shortName || fullText;
+        const canCompactAtLowZoom = smartLODEnabled && !isFocused && zoom < 3.1 && useOfficialNames && fullText.length > 22;
 
-                const signY = dy >= 0 ? (dy === 0 ? (i < j ? -1 : 1) : 1) : -1;
-                const signX = dx >= 0 ? (dx === 0 ? (i < j ? -1 : 1) : 1) : -1;
+        const desiredText = canCompactAtLowZoom ? shortText : fullText;
+        if (node.nameSpan.textContent !== desiredText) {
+          node.nameSpan.textContent = desiredText;
+          const r = node.el.getBoundingClientRect();
+          node.w = Math.max(48, r.width || desiredText.length * 6.3 + 20);
+        } else if (!canCompactAtLowZoom && node.w !== node.fullW) {
+          const r = node.el.getBoundingClientRect();
+          node.w = Math.max(48, r.width || fullText.length * 6.3 + 20);
+        }
 
-                if (overlapY * 1.25 <= overlapX) {
-                  const shiftY = overlapY * 0.45 * signY;
-                  if (!a.locked) a.y -= shiftY;
-                  if (!b.locked) b.y += shiftY;
-                } else {
-                  const shiftX = overlapX * 0.45 * signX;
-                  if (!a.locked) a.x -= shiftX;
-                  if (!b.locked) b.x += shiftX;
-                }
-              }
+        // Если пользователь вручную перетащил подпись — фиксируем её (но в разумных пределах)
+        const manualOffset = userLabelOffsets.get(node.code);
+        if (manualOffset) {
+          node.dx = manualOffset.dx;
+          node.dy = manualOffset.dy;
+          node.lodHidden = false;
+          node.el.classList.remove('lod-hidden');
+          placedBoxes.push({
+            x1: anchor.x + node.dx - node.w / 2,
+            y1: anchor.y + node.dy - node.h / 2,
+            x2: anchor.x + node.dx + node.w / 2,
+            y2: anchor.y + node.dy + node.h / 2
+          });
+          return;
+        }
+
+        // Базовое направление из настроек страны
+        const rawDx = country.dx || 0;
+        const rawDy = country.dy || -16;
+        const prefAngle = Math.atan2(rawDy, rawDx);
+        const baseGap = Math.min(maxEdgeGap, Math.max(8, Math.hypot(rawDx, rawDy) * 0.42 * zoomScale));
+
+        let bestDx = rawDx * 0.45 * zoomScale;
+        let bestDy = rawDy * 0.45 * zoomScale;
+        let minPenalty = Infinity;
+        let foundCleanSpot = false;
+
+        for (let cIdx = 0; cIdx < candidateAngles.length; cIdx++) {
+          const angle = candidateAngles[cIdx] === null ? prefAngle : candidateAngles[cIdx];
+          const gap = cIdx === 0 ? baseGap : Math.min(maxEdgeGap, baseGap + 4);
+
+          // Вычисляем смещение центра плашки так, чтобы её край отстоял от маркера ровно на `gap` пикселей
+          const cosA = Math.cos(angle);
+          const sinA = Math.sin(angle);
+          const candDx = cosA * (node.w / 2 + gap * 0.65);
+          const candDy = sinA * (node.h / 2 + gap);
+
+          const cx = anchor.x + candDx;
+          const cy = anchor.y + candDy;
+          const box = {
+            x1: cx - node.w / 2 - 3,
+            y1: cy - node.h / 2 - 2,
+            x2: cx + node.w / 2 + 3,
+            y2: cy + node.h / 2 + 2
+          };
+
+          // Штраф за выход за пределы видимой области карты
+          let penalty = cIdx * 12;
+          if (box.x1 < 6 || box.x2 > mapSize.x - 6 || box.y1 < 6 || box.y2 > mapSize.y - 6) {
+            penalty += 900;
+          }
+
+          // Проверяем пересечение с уже размещёнными подписями
+          let overlapArea = 0;
+          for (let i = 0; i < placedBoxes.length; i++) {
+            const b = placedBoxes[i];
+            const ox = Math.max(0, Math.min(box.x2, b.x2) - Math.max(box.x1, b.x1));
+            const oy = Math.max(0, Math.min(box.y2, b.y2) - Math.max(box.y1, b.y1));
+            if (ox > 0 && oy > 0) {
+              overlapArea += ox * oy;
             }
           }
 
-          for (let i = 0; i < items.length; i++) {
-            const it = items[i];
-            if (!it.locked) {
-              it.x += (it.baseX - it.x) * 0.08;
-              it.y += (it.baseY - it.y) * 0.08;
-              it.x = Math.max(it.w / 2 + 6, Math.min(mapSize.x - it.w / 2 - 6, it.x));
-              it.y = Math.max(it.h / 2 + 6, Math.min(mapSize.y - it.h / 2 - 6, it.y));
-            }
+          penalty += overlapArea * 5;
+
+          if (overlapArea === 0 && penalty < 500) {
+            bestDx = candDx;
+            bestDy = candDy;
+            minPenalty = penalty;
+            foundCleanSpot = true;
+            break;
+          }
+
+          if (penalty < minPenalty) {
+            minPenalty = penalty;
+            bestDx = candDx;
+            bestDy = candDy;
           }
         }
-      }
 
-      items.forEach(it => {
-        const newTargetDx = it.x - it.anchorX;
-        const newTargetDy = it.y - it.anchorY;
-        it.node.targetDx = newTargetDx;
-        it.node.targetDy = newTargetDy;
+        node.dx = bestDx;
+        node.dy = bestDy;
 
-        if (!resolvedOffsetsCache.has(it.node.code)) {
-          it.node.curDx = newTargetDx;
-          it.node.curDy = newTargetDy;
+        // Если включён режим «Авто-чистота (LOD)» и на мелком зуме подпись сильно перекрывает соседнюю —
+        // аккуратно скрываем текст микрогосударства до приближения или наведения курсора
+        const hideThresholdZoom = currentCategory === 'all' ? 3.55 : 2.75;
+        if (smartLODEnabled && !isFocused && !foundCleanSpot && zoom < hideThresholdZoom && minPenalty > 650) {
+          node.lodHidden = true;
+          node.el.classList.add('lod-hidden');
+        } else {
+          node.lodHidden = false;
+          node.el.classList.remove('lod-hidden');
+          placedBoxes.push({
+            x1: anchor.x + bestDx - node.w / 2 - 2,
+            y1: anchor.y + bestDy - node.h / 2 - 2,
+            x2: anchor.x + bestDx + node.w / 2 + 2,
+            y2: anchor.y + bestDy + node.h / 2 + 2
+          });
         }
-        resolvedOffsetsCache.set(it.node.code, { dx: newTargetDx, dy: newTargetDy });
       });
     }
 
-    function renderLabelsFrame() {
-      rafId = null;
-      let needsMoreFrames = isZoomAnimating;
+    // Мгновенная отрисовка подписей и коротких линий-выносок (60 FPS, без запаздывания и нитей)
+    function renderLabelsImmediate() {
+      const svgEl = document.getElementById('callout-svg');
+      // Во время быстрого зума скрываем тонкие штрихи выносок, чтобы не мелькали
+      svgEl.style.opacity = isZoomAnimating ? '0' : '1';
 
       labelNodesMap.forEach(node => {
-        const { el, haloLine, mainLine, country } = node;
+        const { el, haloLine, mainLine, country, dx, dy, w, h, lodHidden } = node;
         const anchor = getExactAnchorScreenPoint(country);
+        const isHighlighted = selectedCountryCode === country.numCode || hoveredCountryCode === country.numCode;
 
-        const diffX = node.targetDx - node.curDx;
-        const diffY = node.targetDy - node.curDy;
+        const labelX = anchor.x + dx;
+        const labelY = anchor.y + dy;
 
-        if (Math.abs(diffX) > 0.25 || Math.abs(diffY) > 0.25) {
-          node.curDx += diffX * 0.22;
-          node.curDy += diffY * 0.22;
-          needsMoreFrames = true;
-        } else {
-          node.curDx = node.targetDx;
-          node.curDy = node.targetDy;
+        el.style.transform = `translate3d(${labelX.toFixed(1)}px, ${labelY.toFixed(1)}px, 0) translate(-50%, -50%)`;
+
+        if (lodHidden && !isHighlighted) {
+          haloLine.setAttribute('visibility', 'hidden');
+          mainLine.setAttribute('visibility', 'hidden');
+          return;
         }
 
-        const labelX = anchor.x + node.curDx;
-        const labelY = anchor.y + node.curDy;
+        // Вычисляем ближайшую точку на границе плашки, чтобы выноска была короткой и аккуратной
+        const edgePt = getClosestPointOnRectEdge(anchor.x, anchor.y, labelX, labelY, w, h);
+        const edgeDist = Math.hypot(edgePt.x - anchor.x, edgePt.y - anchor.y);
 
-        el.style.transform = `translate3d(${labelX.toFixed(2)}px, ${labelY.toFixed(2)}px, 0) translate(-50%, -50%)`;
-
-        const dist = Math.hypot(node.curDx, node.curDy);
-        if (dist < 8) {
+        if (edgeDist < 4 || isZoomAnimating) {
           haloLine.setAttribute('visibility', 'hidden');
           mainLine.setAttribute('visibility', 'hidden');
         } else {
@@ -2027,75 +2118,80 @@
 
           const primaryCat = currentCategory === 'all' ? country.cats[0] : currentCategory;
           const lineColor = categories[primaryCat].color;
-          const isHighlighted = selectedCountryCode === country.numCode || hoveredCountryCode === country.numCode;
 
-          const x1 = anchor.x.toFixed(2);
-          const y1 = anchor.y.toFixed(2);
-          const x2 = labelX.toFixed(2);
-          const y2 = labelY.toFixed(2);
+          const x1 = anchor.x.toFixed(1);
+          const y1 = anchor.y.toFixed(1);
+          const x2 = edgePt.x.toFixed(1);
+          const y2 = edgePt.y.toFixed(1);
 
           haloLine.setAttribute('x1', x1);
           haloLine.setAttribute('y1', y1);
           haloLine.setAttribute('x2', x2);
           haloLine.setAttribute('y2', y2);
           haloLine.setAttribute('stroke', paperModeEnabled ? '#ffffff' : '#0f172a');
-          haloLine.setAttribute('stroke-width', isHighlighted ? '3.8' : '2.5');
-          haloLine.setAttribute('stroke-opacity', '0.82');
+          haloLine.setAttribute('stroke-width', isHighlighted ? '3.5' : '2.4');
+          haloLine.setAttribute('stroke-opacity', '0.85');
 
           mainLine.setAttribute('x1', x1);
           mainLine.setAttribute('y1', y1);
           mainLine.setAttribute('x2', x2);
           mainLine.setAttribute('y2', y2);
           mainLine.setAttribute('stroke', isHighlighted ? '#38bdf8' : lineColor);
-          mainLine.setAttribute('stroke-width', isHighlighted ? '2.3' : '1.45');
+          mainLine.setAttribute('stroke-width', isHighlighted ? '2.1' : '1.4');
+        }
+      });
+    }
+
+    function zoomSyncLoop() {
+      renderLabelsImmediate();
+      if (isZoomAnimating) {
+        zoomRafId = requestAnimationFrame(zoomSyncLoop);
+      } else {
+        zoomRafId = null;
+      }
+    }
+
+    // Обработка клика и безопасного перетаскивания подписей
+    function setupLabelInteraction(nodeObj) {
+      const { el, country } = nodeObj;
+
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!dragLabelsModeEnabled) {
+          focusCountry(country.numCode, false);
         }
       });
 
-      if (needsMoreFrames) {
-        scheduleSmoothRender();
-      }
-    }
-
-    function scheduleSmoothRender() {
-      if (!rafId) {
-        rafId = requestAnimationFrame(renderLabelsFrame);
-      }
-    }
-
-    // Перетаскивание подписей мышкой или пальцем
-    function setupLabelDragAndClick(nodeObj) {
-      const { el, country } = nodeObj;
-      let isDragging = false;
-      let startX = 0;
-      let startY = 0;
-      let startDx = 0;
-      let startDy = 0;
-
       el.addEventListener('pointerdown', e => {
+        // Если режим перетаскивания подписей ВЫКЛЮЧЕН, не перехватываем жест карты на мобильных!
+        if (!dragLabelsModeEnabled) return;
+
         e.stopPropagation();
-        isDragging = false;
-        startX = e.clientX;
-        startY = e.clientY;
-        startDx = nodeObj.curDx;
-        startDy = nodeObj.curDy;
+        let isDragging = false;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startDx = nodeObj.dx;
+        const startDy = nodeObj.dy;
         el.setPointerCapture(e.pointerId);
 
         const onMove = moveEvt => {
-          const dx = moveEvt.clientX - startX;
-          const dy = moveEvt.clientY - startY;
-          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+          const moveX = moveEvt.clientX - startX;
+          const moveY = moveEvt.clientY - startY;
+          if (Math.abs(moveX) > 3 || Math.abs(moveY) > 3) {
             isDragging = true;
           }
           if (isDragging) {
-            const newDx = startDx + dx;
-            const newDy = startDy + dy;
-            nodeObj.curDx = newDx;
-            nodeObj.curDy = newDy;
-            nodeObj.targetDx = newDx;
-            nodeObj.targetDy = newDy;
-            userLabelOffsets.set(country.numCode, { dx: newDx, dy: newDy });
-            resolvedOffsetsCache.set(country.numCode, { dx: newDx, dy: newDy });
-            scheduleSmoothRender();
+            // Ограничиваем максимальный увод подписи до 95px, чтобы не создавать длинных нитей через океаны
+            const rawNewDx = startDx + moveX;
+            const rawNewDy = startDy + moveY;
+            const dist = Math.hypot(rawNewDx, rawNewDy);
+            const maxManualDist = 95;
+            const scale = dist > maxManualDist ? maxManualDist / dist : 1;
+
+            nodeObj.dx = rawNewDx * scale;
+            nodeObj.dy = rawNewDy * scale;
+            userLabelOffsets.set(country.numCode, { dx: nodeObj.dx, dy: nodeObj.dy });
+            renderLabelsImmediate();
           }
         };
 
@@ -2104,7 +2200,7 @@
           el.removeEventListener('pointermove', onMove);
           el.removeEventListener('pointerup', onUp);
           if (!isDragging) {
-            focusCountry(country.numCode, true);
+            focusCountry(country.numCode, false);
           }
         };
 
@@ -2113,25 +2209,85 @@
       });
     }
 
+    // Синхронизация с событиями карты Leaflet
     map.on('zoomstart', () => {
       isZoomAnimating = true;
-      scheduleSmoothRender();
+      if (!zoomRafId) {
+        zoomRafId = requestAnimationFrame(zoomSyncLoop);
+      }
     });
 
-    map.on('zoomanim', () => {
-      isZoomAnimating = true;
-      scheduleSmoothRender();
-    });
-
-    map.on('move zoom', () => {
-      scheduleSmoothRender();
+    map.on('move', () => {
+      renderLabelsImmediate();
     });
 
     map.on('zoomend moveend resize', () => {
       isZoomAnimating = false;
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      if (zoomRafId) {
+        cancelAnimationFrame(zoomRafId);
+        zoomRafId = null;
+      }
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     });
+
+    // ============================================================================
+    // СЕНСОРНЫЙ СВАЙП НИЖНЕЙ ШТОРКИ (BOTTOM SHEET) НА МОБИЛЬНЫХ УСТРОЙСТВАХ
+    // ============================================================================
+    (function initMobileBottomSheetSwipe() {
+      const sidebar = document.getElementById('sidebar');
+      const handleBar = document.getElementById('sheet-handle-bar');
+      if (!sidebar || !handleBar) return;
+
+      let startY = 0;
+      let startHeight = 0;
+      let dragging = false;
+
+      handleBar.addEventListener('pointerdown', e => {
+        if (!isSmallScreen()) return;
+        // Если нажали прямо на кнопку "Список стран", позволяем обработать обычный клик
+        if (e.target.closest('button')) return;
+
+        dragging = true;
+        startY = e.clientY;
+        startHeight = sidebar.getBoundingClientRect().height;
+        sidebar.classList.add('dragging-sheet');
+        handleBar.setPointerCapture(e.pointerId);
+
+        const onMove = moveEvt => {
+          if (!dragging) return;
+          const deltaY = startY - moveEvt.clientY;
+          const newH = Math.max(72, Math.min(window.innerHeight * 0.9, startHeight + deltaY));
+          sidebar.style.height = `${newH}px`;
+        };
+
+        const onUp = upEvt => {
+          if (!dragging) return;
+          dragging = false;
+          handleBar.releasePointerCapture(upEvt.pointerId);
+          sidebar.classList.remove('dragging-sheet');
+          sidebar.style.height = '';
+
+          const finalH = startHeight + (startY - upEvt.clientY);
+          const vh = window.innerHeight;
+          if (Math.abs(startY - upEvt.clientY) < 6) {
+            cycleMobileSheet();
+          } else if (finalH < vh * 0.28) {
+            setMobileSheetState('peek');
+          } else if (finalH < vh * 0.68) {
+            setMobileSheetState('half');
+          } else {
+            setMobileSheetState('full');
+          }
+
+          handleBar.removeEventListener('pointermove', onMove);
+          handleBar.removeEventListener('pointerup', onUp);
+        };
+
+        handleBar.addEventListener('pointermove', onMove);
+        handleBar.addEventListener('pointerup', onUp);
+      });
+    })();
 
     // Переключение между полными официальными и краткими названиями
     function toggleOfficialNamesMode() {
@@ -2143,14 +2299,14 @@
         btn.className = 'text-[10px] font-extrabold text-emerald-300 bg-emerald-950/90 border border-emerald-600/50 px-2 py-0.5 rounded-md hover:bg-emerald-900 transition shadow-sm';
         btn.textContent = '🏛️ Формат: Полные официальные';
         if (mobBtn) {
-          mobBtn.className = 'px-2 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold';
+          mobBtn.className = 'px-2 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold';
           mobBtn.textContent = '🏛️ Полн.';
         }
       } else {
         btn.className = 'text-[10px] font-extrabold text-sky-300 bg-sky-950/90 border border-sky-700/60 px-2 py-0.5 rounded-md hover:bg-sky-900 transition shadow-sm';
         btn.textContent = '⚡ Формат: Краткие географические';
         if (mobBtn) {
-          mobBtn.className = 'px-2 py-1.5 rounded-xl bg-sky-600/20 text-sky-300 border border-sky-500/40 text-[11px] font-bold';
+          mobBtn.className = 'px-2 py-1.5 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[11px] font-bold';
           mobBtn.textContent = '⚡ Кратк.';
         }
       }
@@ -2159,10 +2315,9 @@
         showCountryInfoCard(unifiedCountriesMap.get(selectedCountryCode));
       }
 
-      resolvedOffsetsCache.clear();
       syncLabelDOMNodes();
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
       renderCountryList();
     }
 
@@ -2195,13 +2350,12 @@
       }
 
       const activeCount = getActiveCountries().length;
-      document.getElementById('active-count-badge').textContent = catKey === 'all' ? '77 гос-в (82 п.)' : `${activeCount} стран`;
+      document.getElementById('active-count-badge').textContent = catKey === 'all' ? '77 гос-в (87 п.)' : `${activeCount} стран`;
       const mobSheetTitle = document.getElementById('mobile-sheet-title');
       if (mobSheetTitle) {
-        mobSheetTitle.textContent = catKey === 'all' ? 'Все категории (82 страны)' : categories[catKey].name;
+        mobSheetTitle.textContent = catKey === 'all' ? 'Все категории (77 государств)' : categories[catKey].name;
       }
 
-      resolvedOffsetsCache.clear();
       drawVectorMap();
       renderMarkersAndLabels();
       renderCountryList();
@@ -2214,10 +2368,10 @@
       if (node) {
         node.el.classList.toggle('highlighted', isHover || selectedCountryCode === numCode);
       }
-      scheduleSmoothRender();
+      renderLabelsImmediate();
     }
 
-    // Приближение к стране и показ справочной карточки
+    // Выбор страны и показ плавающей карточки
     function focusCountry(numCode, zoomIn = true) {
       selectedCountryCode = numCode;
       const country = unifiedCountriesMap.get(numCode);
@@ -2229,7 +2383,6 @@
       labelNodesMap.forEach((node, code) => {
         node.el.classList.toggle('highlighted', code === numCode);
       });
-      scheduleSmoothRender();
 
       const sidebar = document.getElementById('sidebar');
       if (isSmallScreen() && sidebar.dataset.sheet === 'full') {
@@ -2239,8 +2392,11 @@
       if (zoomIn) {
         const targetZoom = country.micro ? 5.5 : 4.2;
         map.flyTo([country.lat, country.lng], Math.max(map.getZoom(), targetZoom), {
-          duration: 0.65
+          duration: 0.6
         });
+      } else {
+        computeCleanLabelLayout();
+        renderLabelsImmediate();
       }
     }
 
@@ -2250,18 +2406,17 @@
       }
     }
 
-    // Показ подробной карточки страны
     function showCountryInfoCard(country) {
-      const card = document.getElementById('country-info-card');
+      const card = document.getElementById('floating-country-card');
       const titleEl = document.getElementById('info-title');
       const shortEl = document.getElementById('info-short');
       const badgesEl = document.getElementById('info-badges');
       const detailsEl = document.getElementById('info-details');
       const coordsEl = document.getElementById('info-coords');
 
-      card.classList.remove('hidden');
+      card.classList.remove('card-hidden');
       titleEl.textContent = country.name;
-      shortEl.textContent = `Краткое название: ${country.shortName} • Столица: ${country.capital}`;
+      shortEl.textContent = `Кратко: ${country.shortName} • Столица: ${country.capital}`;
       badgesEl.innerHTML = '';
 
       country.cats.forEach(cKey => {
@@ -2276,16 +2431,17 @@
       if (coordsEl) {
         const latDir = country.lat >= 0 ? 'с.ш.' : 'ю.ш.';
         const lngDir = country.lng >= 0 ? 'в.д.' : 'з.д.';
-        coordsEl.textContent = `📍 ${Math.abs(country.lat).toFixed(1)}° ${latDir}, ${Math.abs(country.lng).toFixed(1)}° ${lngDir} • ISO: ${country.iso3}`;
+        coordsEl.textContent = `📍 ${Math.abs(country.lat).toFixed(1)}° ${latDir}, ${Math.abs(country.lng).toFixed(1)}° ${lngDir} • ${country.iso3}`;
       }
     }
 
     function closeInfoCard() {
       selectedCountryCode = null;
-      document.getElementById('country-info-card').classList.add('hidden');
+      document.getElementById('floating-country-card').classList.add('card-hidden');
       drawVectorMap();
       labelNodesMap.forEach(node => node.el.classList.remove('highlighted'));
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     }
 
     function clearSearchInput() {
@@ -2391,7 +2547,7 @@
         Object.keys(groupLabelVisibility).forEach(k => { groupLabelVisibility[k] = true; });
         btn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition flex items-center justify-center gap-1.5 shadow-sm';
         btn.innerHTML = '<span>👁️ Подписи: ВКЛ</span>';
-        if (mobBtn) mobBtn.className = 'px-2 py-1.5 rounded-xl bg-sky-600/25 text-sky-300 border border-sky-500/40 text-[11px] font-bold';
+        if (mobBtn) mobBtn.className = 'px-2 py-1.5 rounded-xl bg-sky-500/25 text-sky-300 border border-sky-500/40 text-[11px] font-bold';
       } else {
         btn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 transition flex items-center justify-center gap-1.5';
         btn.innerHTML = '<span>👁️ Подписи: ВЫКЛ</span>';
@@ -2399,8 +2555,8 @@
       }
       updateGroupToggleButtonsUI();
       syncLabelDOMNodes();
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     }
 
     function toggleGroupLabels(catKey) {
@@ -2408,11 +2564,11 @@
       groupLabelVisibility[catKey] = !groupLabelVisibility[catKey];
       updateGroupToggleButtonsUI();
       syncLabelDOMNodes();
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     }
 
-    function presetLabelsOnlyGeo() {
+    function PresetOnlyGeo() {
       allLabelsEnabled = true;
       groupLabelVisibility.mon = false;
       groupLabelVisibility.fed = false;
@@ -2421,8 +2577,8 @@
       groupLabelVisibility.lnd = true;
       updateGroupToggleButtonsUI();
       syncLabelDOMNodes();
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     }
 
     function updateGroupToggleButtonsUI() {
@@ -2435,18 +2591,43 @@
       });
     }
 
-    function toggleSmartSpread() {
-      smartSpreadEnabled = !smartSpreadEnabled;
-      const btn = document.getElementById('btn-spread-labels');
-      if (smartSpreadEnabled) {
+    // Вкл / Выкл режим умной авто-разгрузки подписей при отдалении (Smart LOD)
+    function toggleSmartLOD() {
+      smartLODEnabled = !smartLODEnabled;
+      const btn = document.getElementById('btn-lod-mode');
+      const mobBtn = document.getElementById('mob-btn-lod');
+
+      if (smartLODEnabled) {
         btn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center justify-center gap-1.5 shadow-sm';
-        btn.innerHTML = '<span>📐 Выноски: ВКЛ</span>';
+        btn.innerHTML = '<span>✨ Авто-чистота: ВКЛ</span>';
+        if (mobBtn) {
+          mobBtn.className = 'px-2 py-1.5 rounded-xl bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 text-[11px] font-bold';
+          mobBtn.textContent = '✨ Авто';
+        }
       } else {
         btn.className = 'px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-white/10 transition flex items-center justify-center gap-1.5';
-        btn.innerHTML = '<span>📐 Выноски: ВЫКЛ</span>';
+        btn.innerHTML = '<span>📌 Все подписи сразу</span>';
+        if (mobBtn) {
+          mobBtn.className = 'px-2 py-1.5 rounded-xl bg-slate-800 text-slate-300 border border-white/10 text-[11px] font-bold';
+          mobBtn.textContent = '📌 Все';
+        }
       }
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
+    }
+
+    // Вкл / Выкл режим ручного перетаскивания подписей
+    function toggleDragLabelsMode() {
+      dragLabelsModeEnabled = !dragLabelsModeEnabled;
+      document.body.classList.toggle('drag-labels-mode', dragLabelsModeEnabled);
+      const btn = document.getElementById('btn-drag-mode');
+      if (dragLabelsModeEnabled) {
+        btn.className = 'px-2 py-1.5 rounded-xl text-[11px] font-bold bg-sky-600 text-white border border-sky-400 transition truncate';
+        btn.textContent = '✋ Двигать: ВКЛ';
+      } else {
+        btn.className = 'px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-white/10 transition truncate';
+        btn.textContent = '✋ Двигать: ВЫКЛ';
+      }
     }
 
     function togglePaperMode() {
@@ -2458,34 +2639,34 @@
       btn.textContent = paperModeEnabled ? '🌙 Тёмные плашки' : '📄 Светлый фон';
       drawVectorMap();
       syncLabelDOMNodes();
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     }
 
     function resetDraggedLabels() {
       userLabelOffsets.clear();
-      resolvedOffsetsCache.clear();
-      recomputeCollisionTargets();
-      scheduleSmoothRender();
+      computeCleanLabelLayout();
+      renderLabelsImmediate();
     }
 
     function resetMapView() {
-      const targetZoom = isSmallScreen() ? 1.85 : 2.4;
-      map.flyTo([24, 18], targetZoom, { duration: 0.6 });
+      const targetZoom = isSmallScreen() ? 1.8 : 2.35;
+      map.flyTo([22, 18], targetZoom, { duration: 0.55 });
     }
 
-    // Быстрая навигация по континентам и частям света
+    // Быстрая навигация по частям света
     function flyToRegion(region) {
+      const mobile = isSmallScreen();
       const presets = {
-        world: { center: [24, 18], zoom: isSmallScreen() ? 1.85 : 2.4 },
-        europe: { center: [51.0, 12.0], zoom: 4.25 },
-        asia: { center: [28.0, 88.0], zoom: 3.25 },
-        africa: { center: [4.0, 20.0], zoom: 3.35 },
-        americas: { center: [14.0, -78.0], zoom: 2.65 },
-        oceania: { center: [-18.0, 152.0], zoom: 3.5 }
+        world: { center: [22, 18], zoom: mobile ? 1.8 : 2.35 },
+        europe: { center: [50.5, 11.5], zoom: mobile ? 3.6 : 4.25 },
+        asia: { center: [27.0, 88.0], zoom: mobile ? 2.75 : 3.3 },
+        africa: { center: [3.0, 20.0], zoom: mobile ? 2.85 : 3.35 },
+        americas: { center: [14.0, -78.0], zoom: mobile ? 2.2 : 2.65 },
+        oceania: { center: [-18.0, 152.0], zoom: mobile ? 2.9 : 3.5 }
       };
       const target = presets[region] || presets.world;
-      map.flyTo(target.center, target.zoom, { duration: 0.65 });
+      map.flyTo(target.center, target.zoom, { duration: 0.6 });
     }
 
     // Управление боковой панелью на ПК
@@ -2501,18 +2682,18 @@
 
       setTimeout(() => {
         map.invalidateSize();
-        recomputeCollisionTargets();
-        scheduleSmoothRender();
+        computeCleanLabelLayout();
+        renderLabelsImmediate();
       }, 330);
     }
 
     // Управление нижней шторкой (Bottom Sheet) на мобильных устройствах
     function setMobileSheetState(state) {
       const sidebar = document.getElementById('sidebar');
-      const hint = document.getElementById('mobile-sheet-Toggle-hint');
+      const hint = document.getElementById('mobile-sheet-toggle-hint');
       sidebar.dataset.sheet = state;
       if (hint) {
-        if (state === 'peek') hint.textContent = '▲ Открыть';
+        if (state === 'peek') hint.textContent = '▲ Список стран';
         else if (state === 'half') hint.textContent = '▲ На весь экран';
         else hint.textContent = '▼ Свернуть';
       }
@@ -2526,7 +2707,7 @@
       else setMobileSheetState('peek');
     }
 
-    // Переключатель предпросмотра мобильного режима прямо на ПК
+    // Переключатель предпросмотра смартфона прямо на ПК
     function toggleForceMobileMode() {
       const forced = document.body.classList.toggle('force-mobile');
       const exitBtn = document.getElementById('mob-exit-preview');
@@ -2535,27 +2716,41 @@
       }
       if (forced) {
         setMobileSheetState('peek');
+        legendCollapsed = true;
+        applyLegendState();
       }
       setTimeout(() => {
         map.invalidateSize();
-        recomputeCollisionTargets();
-        scheduleSmoothRender();
+        computeCleanLabelLayout();
+        renderLabelsImmediate();
       }, 330);
     }
 
     // Сворачивание/разворачивание Легенды карты (Задание 6)
-    let legendCollapsed = window.innerWidth < 640;
+    let legendCollapsed = window.innerWidth < 1024;
     function applyLegendState() {
+      const legendBox = document.getElementById('map-legend');
       const body = document.getElementById('legend-body');
       const btn = document.getElementById('legend-collapse-btn');
-      body.classList.toggle('hidden', legendCollapsed);
-      btn.textContent = legendCollapsed ? 'Развернуть' : 'Свернуть';
+      if (isSmallScreen()) {
+        legendBox.classList.toggle('hidden', legendCollapsed);
+        body.classList.remove('hidden');
+        btn.textContent = 'Закрыть';
+      } else {
+        legendBox.classList.remove('hidden');
+        body.classList.toggle('hidden', legendCollapsed);
+        btn.textContent = legendCollapsed ? 'Развернуть' : 'Свернуть';
+      }
     }
 
     function toggleLegendCollapse() {
       legendCollapsed = !legendCollapsed;
       applyLegendState();
     }
+
+    window.addEventListener('resize', () => {
+      applyLegendState();
+    });
 
     // Инициализация при запуске
     applyLegendState();
