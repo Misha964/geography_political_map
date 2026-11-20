@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Политическая карта мира 2026 — Официальные названия государств и Тренажёр</title>
+  <title>Политическая карта мира 2026 — Государства, Международные организации и Тренажёр</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -487,7 +487,9 @@
               </span>
             </div>
             <h1 class="text-sm sm:text-[15px] font-black text-white leading-tight tracking-tight">
-              Политическая карта мира <span class="text-sky-400 font-extrabold">(6 заданий)</span>
+
+              Политическая карта мира <span class="text-sky-400 font-extrabold">+ Организации</span>
+
             </h1>
           </div>
           <div class="flex items-center gap-1.5">
@@ -520,14 +522,47 @@
       </div>
 
       <!-- Прокручиваемая область категорий и настроек -->
+
       <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div class="p-3.5 space-y-2 border-b border-white/10 overflow-y-auto max-h-[50%] shrink-0">
-          <div class="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-            <span>Категории контурной карты:</span>
-            <span id="active-count-badge" class="text-sky-300 bg-sky-950/90 border border-sky-700/50 px-2 py-0.5 rounded-md font-extrabold tabular-nums">77 гос-в (87 п.)</span>
+
+        <div class="p-3.5 space-y-2 border-b border-white/10 overflow-y-auto max-h-[52%] shrink-0">
+
+          <!-- Переключатель разделов: Категории карты / Международные организации -->
+
+          <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-900/95 border border-white/10">
+
+            <button id="tab-mode-atlas" onclick="setBrowseMode('atlas')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold bg-sky-600 text-white shadow transition flex items-center justify-center gap-1">
+
+              <span>🗺️ Категории (5)</span>
+
+            </button>
+
+            <button id="tab-mode-orgs" onclick="setBrowseMode('orgs')" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center justify-center gap-1">
+
+              <span>🌐 Организации (18)</span>
+
+            </button>
+
           </div>
 
+
+
+          <div class="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+
+            <span id="panel-section-title">Категории контурной карты:</span>
+
+            <span id="active-count-badge" class="text-sky-300 bg-sky-950/90 border border-sky-700/50 px-2 py-0.5 rounded-md font-extrabold tabular-nums">82 гос-ва</span>
+
+          </div>
+
+
+
+          <!-- СЕКЦИЯ 1: 5 категорий контурной карты -->
+
+          <div id="atlas-categories-section" class="space-y-2">
+
           <!-- Показать все -->
+
           <button id="btn-all" onclick="selectCategory('all')" class="cat-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-slate-800/95 hover:bg-slate-700 text-white border-2 border-white ring-2 ring-sky-400/80 shadow-md transition">
             <span class="flex items-center gap-2.5">
               <span class="w-3.5 h-3.5 rounded-md bg-gradient-to-br from-rose-500 via-amber-500 to-emerald-500 inline-block shadow-sm"></span>
@@ -604,10 +639,78 @@
                 <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-black/25 font-extrabold tabular-nums">10 стран</span>
               </button>
               <button id="lbl-toggle-lnd" onclick="toggleGroupLabels('lnd')" title="Вкл/Выкл подписи внутриконтинентальных стран" class="px-2.5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700 transition">
+
                 🏷️
+
               </button>
+
             </div>
+
           </div>
+
+          </div>
+
+
+
+          <!-- СЕКЦИЯ 2: Международные организации (18 организаций, 2026) -->
+
+          <div id="organizations-section" class="hidden space-y-2">
+
+            <div class="relative">
+
+              <input
+
+                id="org-filter-input"
+
+                type="text"
+
+                oninput="renderOrganizationsPanel()"
+
+                placeholder="Найти организацию (ООН, БРИКС, НАТО, ЕС...)"
+
+                class="w-full bg-slate-900/95 text-slate-100 placeholder-slate-500 text-[11.5px] rounded-xl px-3 py-1.5 pl-7 border border-white/10 focus:outline-none focus:border-sky-400 transition"
+
+              />
+
+              <span class="absolute left-2.5 top-1.5 text-slate-500 text-[11px]">🔎</span>
+
+            </div>
+
+
+
+            <!-- Паспорт выбранной организации -->
+
+            <div id="active-org-info-box" class="p-2.5 rounded-xl bg-slate-900/90 border border-sky-500/35 text-[11px] space-y-1">
+
+              <div class="flex items-center justify-between gap-2">
+
+                <div id="active-org-title" class="font-extrabold text-white leading-tight"></div>
+
+                <button onclick="startOrgTrainerSession(currentOrgKey)" class="px-2 py-0.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-extrabold shrink-0 transition">
+
+                  🎯 Учить
+
+                </button>
+
+              </div>
+
+              <div id="active-org-meta" class="text-[10.5px] text-sky-300 font-semibold"></div>
+
+              <div id="active-org-note" class="text-[10.5px] text-slate-300 leading-snug"></div>
+
+              <div id="active-org-source" class="text-[9.5px] text-emerald-400 font-semibold"></div>
+
+            </div>
+
+
+
+            <!-- Список кнопок всех организаций -->
+
+            <div id="org-buttons-list" class="grid grid-cols-1 gap-1.5"></div>
+
+          </div>
+
+
 
           <!-- Панель тонкой настройки подписей и названий -->
           <div class="pt-2 border-t border-white/10 space-y-1.5">
@@ -729,26 +832,62 @@
           </div>
         </div>
 
-        <!-- Горизонтальная лента категорий (Свайп пальцем) -->
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pointer-events-auto py-0.5">
-          <button onclick="selectCategory('all')" data-mob-cat="all" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-white text-slate-950 shadow-md ring-2 ring-white transition">
-            Все (77)
+        <!-- Горизонтальная лента категорий / международных организаций (Свайп пальцем) -->
+
+        <div class="flex items-center gap-1.5 pointer-events-auto py-0.5">
+
+          <button id="mob-mode-toggle-btn" onclick="setBrowseMode(browseMode === 'atlas' ? 'orgs' : 'atlas')" class="shrink-0 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold bg-indigo-600 text-white border border-indigo-400/60 shadow-md transition">
+
+            🌐 Орг. (18)
+
           </button>
-          <button onclick="selectCategory('mon')" data-mob-cat="mon" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-md transition">
-            1. Монархии (29)
-          </button>
-          <button onclick="selectCategory('fed')" data-mob-cat="fed" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-md transition">
-            2. Федерации (28)
-          </button>
-          <button onclick="selectCategory('isl')" data-mob-cat="isl" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-blue-300 border border-blue-500/40 backdrop-blur-md shadow-md transition">
-            3. Островные (10)
-          </button>
-          <button onclick="selectCategory('arc')" data-mob-cat="arc" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-violet-300 border border-violet-500/40 backdrop-blur-md shadow-md transition">
-            4. Архипелаги (10)
-          </button>
-          <button onclick="selectCategory('lnd')" data-mob-cat="lnd" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-md transition">
-            5. Внутриконт. (10)
-          </button>
+
+
+
+          <div id="mob-cats-strip" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
+
+            <button onclick="selectCategory('all')" data-mob-cat="all" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-white text-slate-950 shadow-md ring-2 ring-white transition">
+
+              Все (82)
+
+            </button>
+
+            <button onclick="selectCategory('mon')" data-mob-cat="mon" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-md transition">
+
+              1. Монархии (29)
+
+            </button>
+
+            <button onclick="selectCategory('fed')" data-mob-cat="fed" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-md transition">
+
+              2. Федерации (28)
+
+            </button>
+
+            <button onclick="selectCategory('isl')" data-mob-cat="isl" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-blue-300 border border-blue-500/40 backdrop-blur-md shadow-md transition">
+
+              3. Островные (10)
+
+            </button>
+
+            <button onclick="selectCategory('arc')" data-mob-cat="arc" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-violet-300 border border-violet-500/40 backdrop-blur-md shadow-md transition">
+
+              4. Архипелаги (10)
+
+            </button>
+
+            <button onclick="selectCategory('lnd')" data-mob-cat="lnd" class="mob-cat-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-900/90 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-md transition">
+
+              5. Внутриконт. (10)
+
+            </button>
+
+          </div>
+
+
+
+          <div id="mob-orgs-strip" class="hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1"></div>
+
         </div>
 
         <!-- Быстрый переход по континентам на мобильном -->
@@ -908,6 +1047,24 @@
 
         <div id="info-details" class="text-slate-300 text-[11.5px] leading-relaxed mt-2.5 pt-2 border-t border-white/10"></div>
 
+
+
+        <!-- Членство в международных организациях (кликабельные плашки) -->
+
+        <div id="info-orgs-wrap" class="hidden mt-2.5 pt-2 border-t border-white/10">
+
+          <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">
+
+            🌐 Членство в международных организациях (нажмите для фильтра):
+
+          </div>
+
+          <div id="info-orgs-list" class="flex flex-wrap gap-1"></div>
+
+        </div>
+
+
+
         <div class="mt-2.5 pt-2 flex items-center justify-between gap-2 border-t border-white/10 text-[11px] text-slate-400">
           <span id="info-coords" class="font-mono text-[10.5px] truncate"></span>
           <div class="flex items-center gap-1.5 shrink-0">
@@ -992,11 +1149,45 @@
               <span><b>Монархия + Архипелаг</b> (Великобритания, Япония)</span>
             </div>
             <div class="flex items-center gap-2">
+
               <span class="w-4 h-4 rounded-full border-2 border-dashed border-sky-400 bg-sky-400/20 inline-block shrink-0"></span>
+
               <span>Акватория / микрогосударства и малые острова</span>
+
             </div>
+
           </div>
+
         </div>
+
+
+
+        <!-- Динамическая легенда для выбранной международной организации -->
+
+        <div id="legend-org-body" class="hidden space-y-2 text-[11.5px]">
+
+          <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-900/90 border border-white/10">
+
+            <span class="flex items-center gap-2 min-w-0">
+
+              <span id="legend-org-swatch" class="w-4 h-3 rounded-sm border border-white/80 inline-block shrink-0 shadow-sm"></span>
+
+              <span id="legend-org-name" class="font-extrabold text-white truncate"></span>
+
+            </span>
+
+            <span id="legend-org-count" class="text-sky-300 font-extrabold tabular-nums shrink-0"></span>
+
+          </div>
+
+          <div id="legend-org-meta" class="text-[11px] text-slate-300 space-y-1"></div>
+
+          <div id="legend-org-note" class="text-[10.5px] text-slate-400 leading-snug pt-1.5 border-t border-white/10"></div>
+
+          <div id="legend-org-source" class="text-[10px] text-emerald-400 font-semibold"></div>
+
+        </div>
+
       </div>
 
       <!-- ========================================================================= -->
@@ -1019,12 +1210,58 @@
             <button onclick="closeTrainerSetupModal()" class="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm border border-white/10 shrink-0">✕</button>
           </div>
 
-          <div class="my-4 space-y-2">
-            <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
-              Что будем тренировать?
+          <!-- Переключатель вкладок тренажёра: Категории / Международные организации -->
+
+          <div class="mt-3.5 grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-slate-900/95 border border-white/10">
+
+            <button id="trainer-tab-atlas" onclick="setTrainerSetupTab('atlas')" class="px-3 py-2 rounded-xl text-xs font-extrabold bg-sky-600 text-white shadow transition">
+
+              🗺️ Категории карты (5)
+
+            </button>
+
+            <button id="trainer-tab-orgs" onclick="setTrainerSetupTab('orgs')" class="px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 transition">
+
+              🌐 Международные организации (18)
+
+            </button>
+
+          </div>
+
+
+
+          <!-- Выбор объёма тренировки (особенно удобно для ООН, АС, ОЭСР и НАТО) -->
+
+          <div class="mt-2.5 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900/80 border border-white/10 text-[11px]">
+
+            <span class="text-slate-300 font-bold">Длина сессии:</span>
+
+            <div class="flex items-center gap-1">
+
+              <button onclick="setTrainerLimit(0)" data-tlimit="0" class="trainer-limit-btn px-2.5 py-1 rounded-lg font-extrabold bg-sky-600 text-white transition">Все страны</button>
+
+              <button onclick="setTrainerLimit(20)" data-tlimit="20" class="trainer-limit-btn px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300 hover:text-white transition">20 случайных</button>
+
+              <button onclick="setTrainerLimit(10)" data-tlimit="10" class="trainer-limit-btn px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300 hover:text-white transition">10 случайных</button>
+
             </div>
 
+          </div>
+
+
+
+          <div id="trainer-atlas-panel" class="my-3.5 space-y-2">
+
+            <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+
+              Выберите категорию карты:
+
+            </div>
+
+
+
             <!-- Все страны -->
+
             <button onclick="startTrainerSession('all')" class="w-full group p-3 rounded-2xl bg-gradient-to-r from-indigo-950/90 via-slate-900 to-slate-900 hover:from-indigo-900/90 hover:to-slate-800 border border-indigo-500/40 flex items-center justify-between transition text-left shadow-md">
               <div class="flex items-center gap-3">
                 <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 via-amber-500 to-emerald-500 flex items-center justify-center text-lg shadow">🌍</span>
@@ -1089,13 +1326,56 @@
               <div class="flex items-center gap-3">
                 <span class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-base shadow">⛰️</span>
                 <div>
+
                   <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-emerald-300 transition">5. Внутриконтинентальные государства</div>
+
                   <div class="text-[11px] text-slate-400">Казахстан, Монголия, Узбекистан, Беларусь, Чехия, Боливия и др.</div>
+
                 </div>
+
               </div>
+
               <span class="px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-extrabold shrink-0">10 стран</span>
+
             </button>
+
           </div>
+
+
+
+          <!-- Вкладка тренажёра: Международные организации -->
+
+          <div id="trainer-orgs-panel" class="hidden my-3.5 space-y-2">
+
+            <div class="flex items-center justify-between gap-2">
+
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+
+                Выберите международную организацию (2026):
+
+              </div>
+
+            </div>
+
+            <input
+
+              id="trainer-org-search"
+
+              type="text"
+
+              oninput="renderTrainerOrgList()"
+
+              placeholder="Быстрый поиск организации (ООН, БРИКС, НАТО, ЕС, АСЕАН...)"
+
+              class="w-full bg-slate-950/90 text-slate-100 placeholder-slate-500 text-xs rounded-xl px-3 py-2 border border-white/10 focus:outline-none focus:border-sky-400 transition"
+
+            />
+
+            <div id="trainer-orgs-list" class="space-y-1.5 max-h-[300px] overflow-y-auto pr-1"></div>
+
+          </div>
+
+
 
           <div class="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
             <span>💡 Подсказка: малые острова и города-государства отмечены интерактивными кружками</span>
@@ -1171,7 +1451,11 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script src="https://unpkg.com/topojson-client@3"></script>
+
+  <script src="organizations-data.js"></script>
+
   <script>
     // Проверка мобильного режима
     const isSmallScreen = () => window.innerWidth < 1024 || document.body.classList.contains('force-mobile');
@@ -1877,69 +2161,264 @@
       }
     };
 
-    // Объединение данных по уникальным странам (77 государств, 87 позиций в 5 заданиях)
+    // Объединение данных по уникальным странам (5 заданий атласа + полная база 195 суверенных государств)
+
     const unifiedCountriesMap = new Map();
+
+    const allCountriesMap = new Map();
+
     const countryByAnyCode = new Map();
 
+
+
     Object.entries(categories).forEach(([catKey, catObj]) => {
+
       catObj.items.forEach((item, idx) => {
+
         const key = item.numCode;
+
         if (!unifiedCountriesMap.has(key)) {
+
           const entry = {
+
             ...item,
+
             cats: [catKey],
-            catOrder: { [catKey]: idx + 1 }
+
+            catOrder: { [catKey]: idx + 1 },
+
+            orgs: []
+
           };
+
           unifiedCountriesMap.set(key, entry);
+
+          allCountriesMap.set(key, entry);
+
           countryByAnyCode.set(key, entry);
+
           if (item.altCode) countryByAnyCode.set(item.altCode, entry);
+
         } else {
+
           const existing = unifiedCountriesMap.get(key);
+
           if (!existing.cats.includes(catKey)) {
+
             existing.cats.push(catKey);
+
             existing.catOrder[catKey] = idx + 1;
+
           }
+
         }
+
       });
+
     });
+
+
+
+    // Подключаем остальные суверенные государства мира из organizations-data.js (до 195 государств)
+
+    if (Array.isArray(window.WORLD_COUNTRIES_EXTRA)) {
+
+      window.WORLD_COUNTRIES_EXTRA.forEach(item => {
+
+        const key = item.numCode;
+
+        if (!allCountriesMap.has(key)) {
+
+          const entry = {
+
+            ...item,
+
+            cats: [],
+
+            catOrder: {},
+
+            orgs: []
+
+          };
+
+          allCountriesMap.set(key, entry);
+
+          countryByAnyCode.set(key, entry);
+
+          if (item.altCode) countryByAnyCode.set(item.altCode, entry);
+
+        }
+
+      });
+
+    }
+
+
 
     const unifiedCountries = Array.from(unifiedCountriesMap.values());
 
+    const allWorldCountries = Array.from(allCountriesMap.values());
+
+    const internationalOrgs = window.INTERNATIONAL_ORGANIZATIONS || {};
+
+
+
+    // Вычисляем состав каждой международной организации и привязываем orgs к каждой стране
+
+    Object.values(internationalOrgs).forEach(org => {
+
+      if (org.dynamicAllExcept) {
+
+        const excluded = new Set(org.dynamicAllExcept);
+
+        org.memberCodes = allWorldCountries
+
+          .filter(c => !excluded.has(c.numCode))
+
+          .map(c => c.numCode);
+
+      } else {
+
+        org.memberCodes = (org.members || []).filter(code => allCountriesMap.has(code));
+
+      }
+
+
+
+      // Сортируем участников организации по алфавиту кратких русских названий для удобства обучения
+
+      org.memberCodes.sort((a, b) => {
+
+        const ca = allCountriesMap.get(a);
+
+        const cb = allCountriesMap.get(b);
+
+        return (ca.shortName || ca.name).localeCompare(cb.shortName || cb.name, 'ru');
+
+      });
+
+
+
+      org.memberSet = new Set(org.memberCodes);
+
+      org.memberOrder = {};
+
+      org.memberCodes.forEach((code, idx) => {
+
+        org.memberOrder[code] = idx + 1;
+
+        const c = allCountriesMap.get(code);
+
+        if (c && !c.orgs.includes(org.id)) {
+
+          c.orgs.push(org.id);
+
+        }
+
+      });
+
+    });
+
+
+
+    function getOrgMemberCountries(orgKey) {
+
+      const org = internationalOrgs[orgKey];
+
+      if (!org) return [];
+
+      return org.memberCodes.map((code, idx) => ({
+
+        ...allCountriesMap.get(code),
+
+        displayOrder: idx + 1
+
+      }));
+
+    }
+
+
+
     // Глобальные состояния интерфейса
+
     let worldGeoJSON = null;
+
     let baseCountriesLayer = null;
+
     // Индекс векторных слоёв по коду страны для мгновенного обновления стиля без перерисовки всей карты!
+
     const featureLayersByCode = new Map();
 
+
+
     const markerLayerGroup = L.layerGroup().addTo(map);
+
     const haloLayerGroup = L.layerGroup().addTo(map);
+
     const countryCircleMarkers = new Map();
+
     const countryHaloMarkers = new Map();
 
+
+
+    let browseMode = 'atlas'; // 'atlas' | 'orgs'
+
     let currentCategory = 'all';
+
+    let currentOrgKey = 'brics';
+
+    let trainerLimit = 0; // 0 = все страны, 10 или 20 случайных
+
     let allLabelsEnabled = true;
+
     let smartLODEnabled = true;
+
     let dragLabelsModeEnabled = false;
+
     let paperModeEnabled = false;
+
     let useOfficialNames = true;
+
     let selectedCountryCode = null;
+
     let hoveredCountryCode = null;
 
+
+
     // Состояние режима тренажёра
+
     const trainerState = {
+
       active: false,
+
+      mode: 'atlas', // 'atlas' | 'orgs'
+
       categoryKey: 'all',
+
+      orgKey: null,
+
       queue: [],
+
       currentIndex: 0,
+
       currentCountry: null,
+
       phase: 'idle', // 'idle' | 'find_country' | 'input_capital' | 'done_country'
+
       mapAttemptsLeft: 3,
+
       capitalAttemptsLeft: 3,
+
       mapSolved: false,
+
       capitalSolved: false,
+
       wrongFlashCode: null,
+
       completedCountryStatus: new Map(), // numCode -> 'perfect' | 'partial' | 'failed'
+
       history: [] // { country, mapSuccess, mapAttemptsUsed, capSuccess, capAttemptsUsed }
+
     };
 
     const groupLabelVisibility = {
@@ -2076,8 +2555,10 @@
         const rawGeo = topojson.feature(topology, topology.objects.countries);
         worldGeoJSON = sanitizeWorldGeoJSON(rawGeo);
         const statusBar = document.getElementById('status-bar');
+
         statusBar.className = 'mt-2 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold';
-        statusBar.innerHTML = '<span>⚡ Векторное ядро 2026 активно • 77 государств (0 фризов)</span>';
+
+        statusBar.innerHTML = `<span>⚡ Векторное ядро 2026 • ${allWorldCountries.length} государств • ${Object.keys(internationalOrgs).length} организаций</span>`;
         initPersistentVectorMap();
         renderMarkersAndLabels();
       })
@@ -2127,70 +2608,185 @@
         }
 
         const inPool = country && (
-          trainerState.categoryKey === 'all' ||
-          country.cats.includes(trainerState.categoryKey)
+
+          trainerState.mode === 'orgs'
+
+            ? (trainerState.orgKey && country.orgs && country.orgs.includes(trainerState.orgKey))
+
+            : (trainerState.categoryKey === 'all'
+
+                ? country.cats.length > 0
+
+                : country.cats.includes(trainerState.categoryKey))
+
         );
 
+
+
         if (inPool) {
+
           const isHovered = hoveredCountryCode === country.numCode;
+
           return {
+
             fillColor: isHovered ? '#38bdf8' : '#6366f1',
+
             fillOpacity: isHovered ? 0.85 : 0.55,
+
             color: isHovered ? '#020617' : '#1e293b',
+
             weight: isHovered ? 2.0 : 1.15
+
           };
+
         }
 
+
+
         return {
+
           fillColor: paperModeEnabled ? '#ffffff' : '#f1f5f9',
+
           fillOpacity: 0.85,
+
           color: '#94a3b8',
+
           weight: 0.7
+
         };
+
       }
 
-      // Стандартный режим атласа
+
+
+      const neutralStyle = {
+
+        fillColor: paperModeEnabled ? '#ffffff' : '#f8fafc',
+
+        fillOpacity: paperModeEnabled ? 0.94 : 0.82,
+
+        color: paperModeEnabled ? '#64748b' : '#94a3b8',
+
+        weight: 0.7
+
+      };
+
+
+
       if (!country) {
-        return {
-          fillColor: paperModeEnabled ? '#ffffff' : '#f8fafc',
-          fillOpacity: paperModeEnabled ? 0.94 : 0.82,
-          color: paperModeEnabled ? '#64748b' : '#94a3b8',
-          weight: 0.7
-        };
+
+        return neutralStyle;
+
       }
+
+
 
       const isSelected = selectedCountryCode === country.numCode || hoveredCountryCode === country.numCode;
 
-      if (currentCategory !== 'all') {
-        if (!country.cats.includes(currentCategory)) {
-          return {
-            fillColor: paperModeEnabled ? '#ffffff' : '#f8fafc',
-            fillOpacity: paperModeEnabled ? 0.94 : 0.82,
-            color: paperModeEnabled ? '#64748b' : '#94a3b8',
-            weight: 0.65
-          };
+
+
+      // Режим фильтра международных организаций
+
+      if (browseMode === 'orgs') {
+
+        const activeOrg = internationalOrgs[currentOrgKey];
+
+        if (!activeOrg || !activeOrg.memberSet.has(country.numCode)) {
+
+          return isSelected
+
+            ? { ...neutralStyle, fillColor: '#e2e8f0', color: '#0284c7', weight: 1.8 }
+
+            : neutralStyle;
+
         }
+
         return {
-          fillColor: categories[currentCategory].color,
-          fillOpacity: isSelected ? 0.95 : 0.8,
+
+          fillColor: activeOrg.color,
+
+          fillOpacity: isSelected ? 0.95 : 0.78,
+
           color: isSelected ? '#020617' : '#0f172a',
-          weight: isSelected ? 2.4 : 1.3
+
+          weight: isSelected ? 2.4 : 1.25
+
         };
+
       }
+
+
+
+      // Стандартный режим атласа (5 заданий)
+
+      if (!country.cats || country.cats.length === 0) {
+
+        return isSelected
+
+          ? { ...neutralStyle, fillColor: '#e2e8f0', color: '#0284c7', weight: 1.8 }
+
+          : neutralStyle;
+
+      }
+
+
+
+      if (currentCategory !== 'all') {
+
+        if (!country.cats.includes(currentCategory)) {
+
+          return {
+
+            ...neutralStyle,
+
+            weight: 0.65
+
+          };
+
+        }
+
+        return {
+
+          fillColor: categories[currentCategory].color,
+
+          fillOpacity: isSelected ? 0.95 : 0.8,
+
+          color: isSelected ? '#020617' : '#0f172a',
+
+          weight: isSelected ? 2.4 : 1.3
+
+        };
+
+      }
+
+
 
       let fillValue = categories[country.cats[0]].color;
+
       if (country.cats.includes('mon') && country.cats.includes('fed')) {
+
         fillValue = 'url(#stripe-mon-fed)';
+
       } else if (country.cats.includes('mon') && country.cats.includes('arc')) {
+
         fillValue = 'url(#stripe-mon-arc)';
+
       }
 
+
+
       return {
+
         fillColor: fillValue,
+
         fillOpacity: isSelected ? 0.95 : 0.8,
+
         color: isSelected ? '#020617' : '#0f172a',
+
         weight: isSelected ? 2.4 : 1.25
+
       };
+
     }
 
     // Создаёт векторный слой ОДИН РАЗ и индексирует все полигоны по коду страны
@@ -2280,48 +2876,130 @@
       }
     }
 
-    function getActiveCountries() {
-      if (trainerState.active) {
-        if (trainerState.categoryKey === 'all') return unifiedCountries;
-        return categories[trainerState.categoryKey].items.map((item, idx) => ({
-          ...unifiedCountriesMap.get(item.numCode),
-          displayOrder: idx + 1
-        }));
+    function getCountryPrimaryColor(country) {
+
+      if (browseMode === 'orgs') {
+
+        const org = internationalOrgs[currentOrgKey];
+
+        return org ? org.color : '#0284c7';
+
       }
-      if (currentCategory === 'all') {
-        return unifiedCountries;
+
+      if (currentCategory !== 'all' && categories[currentCategory]) {
+
+        return categories[currentCategory].color;
+
       }
-      return categories[currentCategory].items.map((item, idx) => {
-        const unified = unifiedCountriesMap.get(item.numCode);
-        return {
-          ...unified,
-          displayOrder: idx + 1
-        };
-      });
+
+      if (country && country.cats && country.cats.length > 0 && categories[country.cats[0]]) {
+
+        return categories[country.cats[0]].color;
+
+      }
+
+      return '#0284c7';
+
     }
+
+
+
+    function getActiveCountries() {
+
+      if (trainerState.active) {
+
+        if (trainerState.mode === 'orgs' && trainerState.orgKey) {
+
+          return getOrgMemberCountries(trainerState.orgKey);
+
+        }
+
+        if (trainerState.categoryKey === 'all') return unifiedCountries;
+
+        return categories[trainerState.categoryKey].items.map((item, idx) => ({
+
+          ...unifiedCountriesMap.get(item.numCode),
+
+          displayOrder: idx + 1
+
+        }));
+
+      }
+
+      if (browseMode === 'orgs') {
+
+        return getOrgMemberCountries(currentOrgKey);
+
+      }
+
+      if (currentCategory === 'all') {
+
+        return unifiedCountries;
+
+      }
+
+      return categories[currentCategory].items.map((item, idx) => {
+
+        const unified = unifiedCountriesMap.get(item.numCode);
+
+        return {
+
+          ...unified,
+
+          displayOrder: idx + 1
+
+        };
+
+      });
+
+    }
+
+
 
     function isCountryLabelVisible(country) {
+
       if (trainerState.active) return false;
+
       if (!allLabelsEnabled) return false;
+
+      if (browseMode === 'orgs') return true;
+
       if (currentCategory !== 'all') {
+
         return groupLabelVisibility[currentCategory];
+
       }
+
       return country.cats.some(catKey => groupLabelVisibility[catKey]);
+
     }
 
+
+
     // Отрисовка маркеров (пунсонов) и синхронизация DOM-узлов подписей
+
     function renderMarkersAndLabels() {
+
       markerLayerGroup.clearLayers();
+
       haloLayerGroup.clearLayers();
+
       countryCircleMarkers.clear();
+
       countryHaloMarkers.clear();
+
+
 
       const activeList = getActiveCountries();
 
+
+
       activeList.forEach(country => {
-        const primaryCat = currentCategory === 'all' ? country.cats[0] : (categories[currentCategory] ? currentCategory : country.cats[0]);
-        let primaryColor = categories[primaryCat].color;
-        const secondaryCat = currentCategory === 'all' && country.cats.length > 1 ? country.cats[1] : null;
+
+        let primaryColor = getCountryPrimaryColor(country);
+
+        const secondaryCat = browseMode === 'atlas' && currentCategory === 'all' && country.cats && country.cats.length > 1 ? country.cats[1] : null;
+
         let secondaryColor = secondaryCat ? categories[secondaryCat].color : '#ffffff';
 
         if (trainerState.active) {
@@ -2437,22 +3115,76 @@
           el.classList.add('highlighted');
         }
 
-        const catsToShow = currentCategory === 'all' ? country.cats : [currentCategory];
-        let prefixChars = catsToShow.length * 2;
-        catsToShow.forEach(cKey => {
-          const dot = document.createElement('span');
-          dot.className = 'label-dot';
-          dot.style.backgroundColor = categories[cKey].color;
-          el.appendChild(dot);
-        });
+        let prefixChars = 2;
 
-        if (currentCategory !== 'all') {
-          const numSpan = document.createElement('span');
-          numSpan.className = 'label-num';
-          const numStr = `${country.catOrder[currentCategory]}.`;
-          numSpan.textContent = numStr;
-          prefixChars += numStr.length;
-          el.appendChild(numSpan);
+        if (browseMode === 'orgs') {
+
+          const dot = document.createElement('span');
+
+          dot.className = 'label-dot';
+
+          dot.style.backgroundColor = getCountryPrimaryColor(country);
+
+          el.appendChild(dot);
+
+
+
+          const org = internationalOrgs[currentOrgKey];
+
+          const ord = org && org.memberOrder ? org.memberOrder[country.numCode] : country.displayOrder;
+
+          if (ord) {
+
+            const numSpan = document.createElement('span');
+
+            numSpan.className = 'label-num';
+
+            const numStr = `${ord}.`;
+
+            numSpan.textContent = numStr;
+
+            prefixChars += numStr.length;
+
+            el.appendChild(numSpan);
+
+          }
+
+        } else {
+
+          const catsToShow = currentCategory === 'all' ? country.cats : [currentCategory];
+
+          prefixChars = catsToShow.length * 2;
+
+          catsToShow.forEach(cKey => {
+
+            const dot = document.createElement('span');
+
+            dot.className = 'label-dot';
+
+            dot.style.backgroundColor = categories[cKey].color;
+
+            el.appendChild(dot);
+
+          });
+
+
+
+          if (currentCategory !== 'all') {
+
+            const numSpan = document.createElement('span');
+
+            numSpan.className = 'label-num';
+
+            const numStr = `${country.catOrder[currentCategory]}.`;
+
+            numSpan.textContent = numStr;
+
+            prefixChars += numStr.length;
+
+            el.appendChild(numSpan);
+
+          }
+
         }
 
         const nameSpan = document.createElement('span');
@@ -2668,7 +3400,7 @@
         node.dx = bestDx;
         node.dy = bestDy;
 
-        const hideThresholdZoom = currentCategory === 'all' ? 3.55 : 2.75;
+        const hideThresholdZoom = (nodesList.length > 35 || (browseMode === 'atlas' && currentCategory === 'all')) ? 3.55 : 2.75;
         if (smartLODEnabled && !isFocused && !foundCleanSpot && zoom < hideThresholdZoom && minPenalty > 650) {
           node.lodHidden = true;
           node.el.classList.add('lod-hidden');
@@ -2722,8 +3454,7 @@
           haloLine.setAttribute('visibility', 'visible');
           mainLine.setAttribute('visibility', 'visible');
 
-          const primaryCat = currentCategory === 'all' ? country.cats[0] : currentCategory;
-          const lineColor = categories[primaryCat].color;
+          const lineColor = getCountryPrimaryColor(country);
 
           const x1 = anchor.x.toFixed(1);
           const y1 = anchor.y.toFixed(1);
@@ -2771,8 +3502,7 @@
       if (edgeDist >= 4 && !isZoomAnimating) {
         node.haloLine.setAttribute('visibility', 'visible');
         node.mainLine.setAttribute('visibility', 'visible');
-        const primaryCat = currentCategory === 'all' ? node.country.cats[0] : currentCategory;
-        const lineColor = categories[primaryCat].color;
+        const lineColor = getCountryPrimaryColor(node.country);
         node.haloLine.setAttribute('stroke-width', isHighlighted ? '3.5' : '2.4');
         node.mainLine.setAttribute('stroke', isHighlighted ? '#38bdf8' : lineColor);
         node.mainLine.setAttribute('stroke-width', isHighlighted ? '2.1' : '1.4');
@@ -2985,7 +3715,9 @@
       }
 
       if (selectedCountryCode) {
-        showCountryInfoCard(unifiedCountriesMap.get(selectedCountryCode));
+
+        showCountryInfoCard(allCountriesMap.get(selectedCountryCode));
+
       }
 
       syncLabelDOMNodes();
@@ -2994,44 +3726,432 @@
       renderCountryList();
     }
 
-    // Переключение активной категории
-    function selectCategory(catKey) {
-      currentCategory = catKey;
+    // Переключение между разделом «Категории карты» и «Международные организации»
 
-      document.querySelectorAll('.cat-btn').forEach(btn => {
-        btn.classList.remove('border-white', 'ring-2', 'ring-sky-400/80');
-        btn.classList.add('border-transparent');
-      });
-      const activeBtn = document.getElementById(`btn-${catKey}`);
-      if (activeBtn) {
-        activeBtn.classList.remove('border-transparent');
-        activeBtn.classList.add('border-white', 'ring-2', 'ring-sky-400/80');
+    function setBrowseMode(mode) {
+
+      browseMode = mode === 'orgs' ? 'orgs' : 'atlas';
+
+
+
+      const tabAtlas = document.getElementById('tab-mode-atlas');
+
+      const tabOrgs = document.getElementById('tab-mode-orgs');
+
+      const atlasSec = document.getElementById('atlas-categories-section');
+
+      const orgsSec = document.getElementById('organizations-section');
+
+      const sectionTitle = document.getElementById('panel-section-title');
+
+      const mobToggleBtn = document.getElementById('mob-mode-toggle-btn');
+
+      const mobCatsStrip = document.getElementById('mob-cats-strip');
+
+      const mobOrgsStrip = document.getElementById('mob-orgs-strip');
+
+
+
+      if (browseMode === 'orgs') {
+
+        if (tabAtlas) tabAtlas.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center justify-center gap-1';
+
+        if (tabOrgs) tabOrgs.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold bg-indigo-600 text-white shadow transition flex items-center justify-center gap-1';
+
+        if (atlasSec) atlasSec.classList.add('hidden');
+
+        if (orgsSec) orgsSec.classList.remove('hidden');
+
+        if (sectionTitle) sectionTitle.textContent = 'Международные организации (2026):';
+
+        if (mobToggleBtn) mobToggleBtn.textContent = '🗺️ Катег.';
+
+        if (mobCatsStrip) mobCatsStrip.classList.add('hidden');
+
+        if (mobOrgsStrip) mobOrgsStrip.classList.remove('hidden');
+
+        selectOrganization(currentOrgKey, false);
+
+      } else {
+
+        if (tabAtlas) tabAtlas.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold bg-sky-600 text-white shadow transition flex items-center justify-center gap-1';
+
+        if (tabOrgs) tabOrgs.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center justify-center gap-1';
+
+        if (atlasSec) atlasSec.classList.remove('hidden');
+
+        if (orgsSec) orgsSec.classList.add('hidden');
+
+        if (sectionTitle) sectionTitle.textContent = 'Категории контурной карты:';
+
+        if (mobToggleBtn) mobToggleBtn.textContent = '🌐 Орг. (18)';
+
+        if (mobCatsStrip) mobCatsStrip.classList.remove('hidden');
+
+        if (mobOrgsStrip) mobOrgsStrip.classList.add('hidden');
+
+        selectCategory(currentCategory);
+
       }
 
-      document.querySelectorAll('.mob-cat-pill').forEach(pill => {
-        const isCurrent = pill.dataset.mobCat === catKey;
-        if (isCurrent) {
-          pill.classList.add('ring-2', 'ring-white', 'scale-105');
-        } else {
-          pill.classList.remove('ring-2', 'ring-white', 'scale-105');
-        }
-      });
+    }
 
-      if (catKey !== 'all') {
-        groupLabelVisibility[catKey] = true;
-        updateGroupToggleButtonsUI();
+
+
+    // Выбор конкретной международной организации (фильтр на карте и в списке)
+
+    function selectOrganization(orgKey, autoFly = true) {
+
+      if (!internationalOrgs[orgKey]) return;
+
+      currentOrgKey = orgKey;
+
+      if (browseMode !== 'orgs') {
+
+        browseMode = 'orgs';
+
+        const tabAtlas = document.getElementById('tab-mode-atlas');
+
+        const tabOrgs = document.getElementById('tab-mode-orgs');
+
+        const atlasSec = document.getElementById('atlas-categories-section');
+
+        const orgsSec = document.getElementById('organizations-section');
+
+        const sectionTitle = document.getElementById('panel-section-title');
+
+        const mobToggleBtn = document.getElementById('mob-mode-toggle-btn');
+
+        const mobCatsStrip = document.getElementById('mob-cats-strip');
+
+        const mobOrgsStrip = document.getElementById('mob-orgs-strip');
+
+
+
+        if (tabAtlas) tabAtlas.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/5 transition flex items-center justify-center gap-1';
+
+        if (tabOrgs) tabOrgs.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-extrabold bg-indigo-600 text-white shadow transition flex items-center justify-center gap-1';
+
+        if (atlasSec) atlasSec.classList.add('hidden');
+
+        if (orgsSec) orgsSec.classList.remove('hidden');
+
+        if (sectionTitle) sectionTitle.textContent = 'Международные организации (2026):';
+
+        if (mobToggleBtn) mobToggleBtn.textContent = '🗺️ Катег.';
+
+        if (mobCatsStrip) mobCatsStrip.classList.add('hidden');
+
+        if (mobOrgsStrip) mobOrgsStrip.classList.remove('hidden');
+
       }
 
-      const activeCount = getActiveCountries().length;
-      document.getElementById('active-count-badge').textContent = catKey === 'all' ? '77 гос-в (87 п.)' : `${activeCount} стран`;
+
+
+      const org = internationalOrgs[orgKey];
+
+      const count = org.memberCodes.length;
+
+
+
+      document.getElementById('active-count-badge').textContent = `${org.shortName}: ${count} стран`;
+
       const mobSheetTitle = document.getElementById('mobile-sheet-title');
+
       if (mobSheetTitle) {
-        mobSheetTitle.textContent = catKey === 'all' ? 'Все категории (77 государств)' : categories[catKey].name;
+
+        mobSheetTitle.textContent = `${org.icon} ${org.shortName} (${count} стран)`;
+
       }
+
+
+
+      const titleEl = document.getElementById('active-org-title');
+
+      const metaEl = document.getElementById('active-org-meta');
+
+      const noteEl = document.getElementById('active-org-note');
+
+      const sourceEl = document.getElementById('active-org-source');
+
+      if (titleEl) titleEl.textContent = `${org.icon} ${org.fullName}`;
+
+      if (metaEl) metaEl.textContent = `Осн.: ${org.founded} • Штаб-квартира: ${org.hq}`;
+
+      if (noteEl) noteEl.textContent = org.note;
+
+      if (sourceEl) sourceEl.textContent = `✓ Офиц. источник: ${org.source}`;
+
+
+
+      renderOrganizationsPanel();
+
+      renderMobileOrgPills();
+
+      updateOrgLegendUI();
+
+
 
       refreshAllPolygonStyles();
+
       renderMarkersAndLabels();
+
       renderCountryList();
+
+
+
+      if (autoFly && org.regionHint) {
+
+        flyToRegion(org.regionHint);
+
+      }
+
+    }
+
+
+
+    function renderOrganizationsPanel() {
+
+      const container = document.getElementById('org-buttons-list');
+
+      if (!container) return;
+
+      const filterInput = document.getElementById('org-filter-input');
+
+      const q = (filterInput ? filterInput.value : '').trim().toLowerCase();
+
+
+
+      const frag = document.createDocumentFragment();
+
+      Object.values(internationalOrgs).forEach(org => {
+
+        if (q && !org.shortName.toLowerCase().includes(q) && !org.fullName.toLowerCase().includes(q) && !org.hq.toLowerCase().includes(q)) {
+
+          return;
+
+        }
+
+        const isActive = browseMode === 'orgs' && currentOrgKey === org.id;
+
+        const btn = document.createElement('button');
+
+        btn.onclick = () => selectOrganization(org.id, true);
+
+        btn.className = `cat-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white border-2 transition shadow-sm ${
+
+          isActive ? 'border-white ring-2 ring-sky-400/80' : 'border-transparent opacity-90 hover:opacity-100'
+
+        }`;
+
+        btn.style.background = `linear-gradient(90deg, ${org.color}ee 0%, ${org.color}bb 100%)`;
+
+        btn.innerHTML = `
+
+          <span class="flex items-center gap-2 min-w-0 pr-2">
+
+            <span class="text-sm shrink-0">${org.icon}</span>
+
+            <span class="truncate text-left">${org.shortName} <span class="font-medium opacity-85 text-[10.5px]">— ${org.fullName}</span></span>
+
+          </span>
+
+          <span class="px-1.5 py-0.5 text-[10px] rounded-md bg-black/30 font-extrabold tabular-nums shrink-0">${org.memberCodes.length}</span>
+
+        `;
+
+        frag.appendChild(btn);
+
+      });
+
+      container.innerHTML = '';
+
+      container.appendChild(frag);
+
+    }
+
+
+
+    function renderMobileOrgPills() {
+
+      const strip = document.getElementById('mob-orgs-strip');
+
+      if (!strip) return;
+
+      const frag = document.createDocumentFragment();
+
+      Object.values(internationalOrgs).forEach(org => {
+
+        const isCurrent = browseMode === 'orgs' && currentOrgKey === org.id;
+
+        const btn = document.createElement('button');
+
+        btn.onclick = () => selectOrganization(org.id, true);
+
+        btn.className = `shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold backdrop-blur-md shadow-md transition ${
+
+          isCurrent
+
+            ? 'text-white ring-2 ring-white scale-105'
+
+            : 'bg-slate-900/90 text-slate-200 border border-white/15'
+
+        }`;
+
+        if (isCurrent) {
+
+          btn.style.backgroundColor = org.color;
+
+        }
+
+        btn.textContent = `${org.icon} ${org.shortName} (${org.memberCodes.length})`;
+
+        frag.appendChild(btn);
+
+      });
+
+      strip.innerHTML = '';
+
+      strip.appendChild(frag);
+
+    }
+
+
+
+    function updateOrgLegendUI() {
+
+      const atlasLegend = document.getElementById('legend-body');
+
+      const orgLegend = document.getElementById('legend-org-body');
+
+      if (!atlasLegend || !orgLegend) return;
+
+
+
+      if (browseMode === 'orgs') {
+
+        const org = internationalOrgs[currentOrgKey];
+
+        atlasLegend.classList.add('hidden');
+
+        if (!legendCollapsed || !isSmallScreen()) {
+
+          orgLegend.classList.remove('hidden');
+
+        }
+
+        if (org) {
+
+          document.getElementById('legend-org-swatch').style.backgroundColor = org.color;
+
+          document.getElementById('legend-org-name').textContent = `${org.icon} ${org.shortName} — ${org.fullName}`;
+
+          document.getElementById('legend-org-count').textContent = `${org.memberCodes.length} стран`;
+
+          document.getElementById('legend-org-meta').innerHTML = `<div>📅 <b>Основана:</b> ${org.founded}</div><div>🏢 <b>Штаб-квартира:</b> ${org.hq}</div>`;
+
+          document.getElementById('legend-org-note').textContent = org.note;
+
+          document.getElementById('legend-org-source').textContent = `✓ Источник: ${org.source}`;
+
+        }
+
+      } else {
+
+        orgLegend.classList.add('hidden');
+
+        if (!legendCollapsed) {
+
+          atlasLegend.classList.remove('hidden');
+
+        }
+
+      }
+
+    }
+
+
+
+    // Переключение активной категории
+
+    function selectCategory(catKey) {
+
+      browseMode = 'atlas';
+
+      currentCategory = catKey;
+
+
+
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+
+        btn.classList.remove('border-white', 'ring-2', 'ring-sky-400/80');
+
+        btn.classList.add('border-transparent');
+
+      });
+
+      const activeBtn = document.getElementById(`btn-${catKey}`);
+
+      if (activeBtn) {
+
+        activeBtn.classList.remove('border-transparent');
+
+        activeBtn.classList.add('border-white', 'ring-2', 'ring-sky-400/80');
+
+      }
+
+
+
+      document.querySelectorAll('.mob-cat-pill').forEach(pill => {
+
+        const isCurrent = pill.dataset.mobCat === catKey;
+
+        if (isCurrent) {
+
+          pill.classList.add('ring-2', 'ring-white', 'scale-105');
+
+        } else {
+
+          pill.classList.remove('ring-2', 'ring-white', 'scale-105');
+
+        }
+
+      });
+
+
+
+      if (catKey !== 'all') {
+
+        groupLabelVisibility[catKey] = true;
+
+        updateGroupToggleButtonsUI();
+
+      }
+
+
+
+      const activeCount = getActiveCountries().length;
+
+      document.getElementById('active-count-badge').textContent = catKey === 'all' ? `${unifiedCountries.length} гос-в (87 п.)` : `${activeCount} стран`;
+
+      const mobSheetTitle = document.getElementById('mobile-sheet-title');
+
+      if (mobSheetTitle) {
+
+        mobSheetTitle.textContent = catKey === 'all' ? `Все категории (${unifiedCountries.length} государств)` : categories[catKey].name;
+
+      }
+
+
+
+      updateOrgLegendUI();
+
+      refreshAllPolygonStyles();
+
+      renderMarkersAndLabels();
+
+      renderCountryList();
+
     }
 
     // Точечная подсветка страны при наведении (O(1) — без перерисовки всей карты!)
@@ -3056,11 +4176,17 @@
     // ВЫБОР СТРАНЫ И ПОКАЗ КРАТКОЙ СВОДКИ (НА ПК И ТЕЛЕФОНЕ)
     // ============================================================================
     function focusCountry(numCode, zoomIn = true) {
+
       if (trainerState.active) return;
 
+
+
       const prevSelected = selectedCountryCode;
+
       selectedCountryCode = numCode;
-      const country = unifiedCountriesMap.get(numCode);
+
+      const country = allCountriesMap.get(numCode);
+
       if (!country) return;
 
       if (isSmallScreen()) {
@@ -3128,15 +4254,86 @@
       }
 
       badgesEl.innerHTML = '';
-      country.cats.forEach(cKey => {
+
+      if (country.cats && country.cats.length > 0) {
+
+        country.cats.forEach(cKey => {
+
+          const badge = document.createElement('span');
+
+          badge.className = 'px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold text-white shadow-sm flex items-center gap-1';
+
+          badge.style.backgroundColor = categories[cKey].color;
+
+          badge.innerHTML = `<span>${categories[cKey].num}. ${categories[cKey].shortLabel}</span><span class="opacity-80">(№${country.catOrder[cKey]})</span>`;
+
+          badgesEl.appendChild(badge);
+
+        });
+
+      } else {
+
         const badge = document.createElement('span');
-        badge.className = 'px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold text-white shadow-sm flex items-center gap-1';
-        badge.style.backgroundColor = categories[cKey].color;
-        badge.innerHTML = `<span>${categories[cKey].num}. ${categories[cKey].shortLabel}</span><span class="opacity-80">(№${country.catOrder[cKey]})</span>`;
+
+        badge.className = 'px-2.5 py-0.5 rounded-lg text-[10.5px] font-extrabold text-sky-200 bg-sky-900/70 border border-sky-500/40 shadow-sm';
+
+        badge.textContent = '🌐 Суверенное государство мира';
+
         badgesEl.appendChild(badge);
-      });
+
+      }
+
+
 
       detailsEl.textContent = country.info;
+
+
+
+      // Показываем кликабельные плашки международных организаций, в которых состоит государство
+
+      const orgsWrap = document.getElementById('info-orgs-wrap');
+
+      const orgsList = document.getElementById('info-orgs-list');
+
+      if (orgsWrap && orgsList) {
+
+        orgsList.innerHTML = '';
+
+        if (country.orgs && country.orgs.length > 0) {
+
+          orgsWrap.classList.remove('hidden');
+
+          country.orgs.forEach(oKey => {
+
+            const org = internationalOrgs[oKey];
+
+            if (!org) return;
+
+            const pill = document.createElement('button');
+
+            pill.type = 'button';
+
+            pill.onclick = () => selectOrganization(oKey, false);
+
+            pill.title = `${org.fullName} — нажмите, чтобы показать всех участников на карте`;
+
+            pill.className = 'px-2 py-0.5 rounded-md text-[10px] font-extrabold text-white border border-white/20 hover:scale-105 transition shadow-sm';
+
+            pill.style.backgroundColor = org.color;
+
+            pill.textContent = `${org.icon} ${org.shortName}`;
+
+            orgsList.appendChild(pill);
+
+          });
+
+        } else {
+
+          orgsWrap.classList.add('hidden');
+
+        }
+
+      }
       if (coordsEl) {
         const latDir = country.lat >= 0 ? 'с.ш.' : 'ю.ш.';
         const lngDir = country.lng >= 0 ? 'в.д.' : 'з.д.';
@@ -3181,7 +4378,144 @@
       }
 
       const fragment = document.createDocumentFragment();
+
+
+
+      if (browseMode === 'orgs') {
+
+        const org = internationalOrgs[currentOrgKey];
+
+        if (org) {
+
+          const members = getOrgMemberCountries(currentOrgKey).filter(item =>
+
+            !query ||
+
+            item.name.toLowerCase().includes(query) ||
+
+            (item.shortName && item.shortName.toLowerCase().includes(query)) ||
+
+            item.capital.toLowerCase().includes(query) ||
+
+            item.info.toLowerCase().includes(query)
+
+          );
+
+
+
+          const header = document.createElement('div');
+
+          header.className = 'sticky top-0 z-10 px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider rounded-lg bg-slate-950/95 text-slate-200 border-l-4 mt-1 shadow flex items-center justify-between';
+
+          header.style.borderLeftColor = org.color;
+
+          header.innerHTML = `<span>${org.icon} ${org.shortName} (${members.length})</span><span class="text-[10px] text-slate-400 font-semibold">${org.hq.split('(')[0].trim()}</span>`;
+
+          fragment.appendChild(header);
+
+
+
+          members.forEach(item => {
+
+            const isSelected = selectedCountryCode === item.numCode;
+
+            const row = document.createElement('div');
+
+            row.className = `flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer border transition text-xs ${
+
+              isSelected
+
+                ? 'bg-sky-950/50 border-sky-500/60 shadow-md'
+
+                : 'bg-slate-900/65 hover:bg-slate-800/90 border-white/5'
+
+            }`;
+
+
+
+            const left = document.createElement('div');
+
+            left.className = 'flex items-start gap-2.5 min-w-0 pr-2';
+
+
+
+            const dot = document.createElement('span');
+
+            dot.className = 'w-2.5 h-2.5 rounded-sm shrink-0 mt-1 shadow-sm';
+
+            dot.style.backgroundColor = org.color;
+
+            left.appendChild(dot);
+
+
+
+            const text = document.createElement('div');
+
+            text.className = 'min-w-0';
+
+            const primaryTitle = getDisplayName(item);
+
+            const subTitle = useOfficialNames && item.shortName !== item.name
+
+              ? `${item.shortName} • 🏛️ Столица: ${item.capital}`
+
+              : `🏛️ Столица: ${item.capital}`;
+
+
+
+            text.innerHTML = `
+
+              <div class="font-bold text-slate-100 leading-snug break-words">${item.displayOrder}. ${primaryTitle}</div>
+
+              <div class="text-slate-400 text-[10.5px] mt-0.5">${subTitle}</div>
+
+            `;
+
+            left.appendChild(text);
+
+            row.appendChild(left);
+
+
+
+            const orgCountTag = document.createElement('span');
+
+            orgCountTag.className = 'text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-800 text-sky-300 border border-slate-700 shrink-0';
+
+            orgCountTag.textContent = `${item.orgs.length} орг.`;
+
+            orgCountTag.title = 'Количество международных организаций в базе, в которых состоит государство';
+
+            row.appendChild(orgCountTag);
+
+
+
+            row.addEventListener('mouseenter', () => highlightCountry(item.numCode, true));
+
+            row.addEventListener('mouseleave', () => highlightCountry(item.numCode, false));
+
+            row.addEventListener('click', () => focusCountry(item.numCode, true));
+
+            fragment.appendChild(row);
+
+          });
+
+        }
+
+
+
+        box.innerHTML = '';
+
+        box.appendChild(fragment);
+
+        return;
+
+      }
+
+
+
       const catKeys = currentCategory === 'all' ? Object.keys(categories) : [currentCategory];
+
+
 
       catKeys.forEach(catKey => {
         const group = categories[catKey];
@@ -3262,81 +4596,401 @@
     // РЕЖИМ ТРЕНАЖЁРА (ПОЛНАЯ ЛОГИКА: ВЫБОР КАТЕГОРИИ -> КАРТА -> СТОЛИЦА -> ИТОГИ)
     // ============================================================================
     function openTrainerSetupModal() {
+
       document.getElementById('trainer-setup-modal').classList.remove('hidden');
+
+      setTrainerSetupTab(browseMode === 'orgs' ? 'orgs' : 'atlas');
+
+      renderTrainerOrgList();
+
     }
+
+
 
     function closeTrainerSetupModal() {
+
       document.getElementById('trainer-setup-modal').classList.add('hidden');
+
     }
+
+
 
     function openTrainerSetupFromResults() {
+
       document.getElementById('trainer-results-modal').classList.add('hidden');
+
       openTrainerSetupModal();
+
     }
+
+
+
+    function setTrainerSetupTab(tab) {
+
+      const isOrgs = tab === 'orgs';
+
+      const tabAtlas = document.getElementById('trainer-tab-atlas');
+
+      const tabOrgs = document.getElementById('trainer-tab-orgs');
+
+      const panelAtlas = document.getElementById('trainer-atlas-panel');
+
+      const panelOrgs = document.getElementById('trainer-orgs-panel');
+
+
+
+      if (tabAtlas) tabAtlas.className = isOrgs
+
+        ? 'px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 transition'
+
+        : 'px-3 py-2 rounded-xl text-xs font-extrabold bg-sky-600 text-white shadow transition';
+
+      if (tabOrgs) tabOrgs.className = isOrgs
+
+        ? 'px-3 py-2 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow transition'
+
+        : 'px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 transition';
+
+
+
+      if (panelAtlas) panelAtlas.classList.toggle('hidden', isOrgs);
+
+      if (panelOrgs) panelOrgs.classList.toggle('hidden', !isOrgs);
+
+    }
+
+
+
+    function setTrainerLimit(limit) {
+
+      trainerLimit = limit;
+
+      document.querySelectorAll('.trainer-limit-btn').forEach(btn => {
+
+        const active = Number(btn.dataset.tlimit) === limit;
+
+        btn.className = active
+
+          ? 'trainer-limit-btn px-2.5 py-1 rounded-lg font-extrabold bg-sky-600 text-white transition'
+
+          : 'trainer-limit-btn px-2.5 py-1 rounded-lg font-bold bg-slate-800 text-slate-300 hover:text-white transition';
+
+      });
+
+    }
+
+
+
+    function renderTrainerOrgList() {
+
+      const listEl = document.getElementById('trainer-orgs-list');
+
+      if (!listEl) return;
+
+      const searchEl = document.getElementById('trainer-org-search');
+
+      const q = (searchEl ? searchEl.value : '').trim().toLowerCase();
+
+
+
+      const frag = document.createDocumentFragment();
+
+      Object.values(internationalOrgs).forEach(org => {
+
+        if (q && !org.shortName.toLowerCase().includes(q) && !org.fullName.toLowerCase().includes(q)) {
+
+          return;
+
+        }
+
+        const btn = document.createElement('button');
+
+        btn.onclick = () => startOrgTrainerSession(org.id);
+
+        btn.className = 'w-full group p-2.5 rounded-2xl bg-slate-900/85 hover:bg-slate-800/95 border border-white/10 hover:border-sky-400/50 flex items-center justify-between gap-2 transition text-left';
+
+        btn.innerHTML = `
+
+          <div class="flex items-center gap-3 min-w-0">
+
+            <span class="w-9 h-9 rounded-xl flex items-center justify-center text-base shadow shrink-0" style="background:${org.color};">${org.icon}</span>
+
+            <div class="min-w-0">
+
+              <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-sky-300 transition truncate">${org.shortName} — ${org.fullName}</div>
+
+              <div class="text-[10.5px] text-slate-400 truncate">🏢 ${org.hq} • 📅 ${org.founded}</div>
+
+            </div>
+
+          </div>
+
+          <span class="px-2.5 py-1 rounded-xl bg-white/10 text-sky-300 border border-white/10 text-xs font-extrabold shrink-0 tabular-nums">${org.memberCodes.length} стран</span>
+
+        `;
+
+        frag.appendChild(btn);
+
+      });
+
+      listEl.innerHTML = '';
+
+      listEl.appendChild(frag);
+
+    }
+
+
 
     function shuffleArray(arr) {
+
       const copy = [...arr];
+
       for (let i = copy.length - 1; i > 0; i--) {
+
         const j = Math.floor(Math.random() * (i + 1));
+
         [copy[i], copy[j]] = [copy[j], copy[i]];
+
       }
+
       return copy;
+
     }
+
+
 
     function startTrainerSession(catKey, customList = null) {
+
       closeTrainerSetupModal();
+
       document.getElementById('trainer-results-modal').classList.add('hidden');
+
       closeInfoCard();
 
+
+
       let pool = [];
+
       if (customList && customList.length > 0) {
+
         pool = customList;
+
       } else if (catKey === 'all') {
+
         pool = unifiedCountries;
+
       } else {
+
         pool = categories[catKey].items.map(item => unifiedCountriesMap.get(item.numCode));
+
       }
+
+
+
+      let shuffled = shuffleArray(pool);
+
+      if (!customList && trainerLimit > 0 && shuffled.length > trainerLimit) {
+
+        shuffled = shuffled.slice(0, trainerLimit);
+
+      }
+
+
 
       trainerState.active = true;
+
+      trainerState.mode = 'atlas';
+
       trainerState.categoryKey = catKey;
-      trainerState.queue = shuffleArray(pool);
+
+      trainerState.orgKey = null;
+
+      trainerState.queue = shuffled;
+
       trainerState.currentIndex = 0;
+
       trainerState.completedCountryStatus.clear();
+
       trainerState.history = [];
+
       trainerState.wrongFlashCode = null;
 
+
+
       document.body.classList.add('trainer-active');
+
       document.getElementById('trainer-active-hud').classList.remove('hidden');
+
       document.getElementById('map-legend').classList.add('hidden');
 
+
+
       const catTitle = customList
-        ? `Повтор ошибок (${pool.length})`
-        : (catKey === 'all' ? 'Все категории (77 государств)' : categories[catKey].name);
+
+        ? `Повтор ошибок (${shuffled.length})`
+
+        : (catKey === 'all' ? `Все категории (${shuffled.length} из ${unifiedCountries.length})` : categories[catKey].name);
+
       document.getElementById('trainer-cat-label').textContent = catTitle;
 
+
+
       renderMarkersAndLabels();
+
       refreshAllPolygonStyles();
 
+
+
       setTimeout(() => {
+
         map.invalidateSize();
+
         resetMapView();
+
         loadCurrentTrainerCountry();
+
       }, 150);
+
     }
+
+
+
+    function startOrgTrainerSession(orgKey, customList = null) {
+
+      const org = internationalOrgs[orgKey];
+
+      if (!org) return;
+
+
+
+      closeTrainerSetupModal();
+
+      document.getElementById('trainer-results-modal').classList.add('hidden');
+
+      closeInfoCard();
+
+
+
+      const fullPool = getOrgMemberCountries(orgKey);
+
+      let pool = (customList && customList.length > 0) ? customList : fullPool;
+
+      let shuffled = shuffleArray(pool);
+
+      if (!customList && trainerLimit > 0 && shuffled.length > trainerLimit) {
+
+        shuffled = shuffled.slice(0, trainerLimit);
+
+      }
+
+
+
+      trainerState.active = true;
+
+      trainerState.mode = 'orgs';
+
+      trainerState.orgKey = orgKey;
+
+      trainerState.queue = shuffled;
+
+      trainerState.currentIndex = 0;
+
+      trainerState.completedCountryStatus.clear();
+
+      trainerState.history = [];
+
+      trainerState.wrongFlashCode = null;
+
+
+
+      document.body.classList.add('trainer-active');
+
+      document.getElementById('trainer-active-hud').classList.remove('hidden');
+
+      document.getElementById('map-legend').classList.add('hidden');
+
+
+
+      const labelText = customList
+
+        ? `${org.icon} ${org.shortName} — Повтор ошибок (${shuffled.length})`
+
+        : `${org.icon} ${org.shortName} (${shuffled.length}${shuffled.length < fullPool.length ? ` из ${fullPool.length}` : ''} стран)`;
+
+      document.getElementById('trainer-cat-label').textContent = labelText;
+
+
+
+      renderMarkersAndLabels();
+
+      refreshAllPolygonStyles();
+
+
+
+      setTimeout(() => {
+
+        map.invalidateSize();
+
+        if (org.regionHint) {
+
+          flyToRegion(org.regionHint);
+
+        } else {
+
+          resetMapView();
+
+        }
+
+        loadCurrentTrainerCountry();
+
+      }, 150);
+
+    }
+
+
 
     function restartCurrentTrainerCategory() {
-      startTrainerSession(trainerState.categoryKey);
+
+      if (trainerState.mode === 'orgs' && trainerState.orgKey) {
+
+        startOrgTrainerSession(trainerState.orgKey);
+
+      } else {
+
+        startTrainerSession(trainerState.categoryKey);
+
+      }
+
     }
 
+
+
     function retryTrainerMistakes() {
+
       const mistakes = trainerState.history
+
         .filter(h => !h.mapSuccess || !h.capSuccess || h.mapAttemptsUsed > 1 || h.capAttemptsUsed > 1)
+
         .map(h => h.country);
+
       if (mistakes.length > 0) {
-        startTrainerSession(trainerState.categoryKey, mistakes);
+
+        if (trainerState.mode === 'orgs' && trainerState.orgKey) {
+
+          startOrgTrainerSession(trainerState.orgKey, mistakes);
+
+        } else {
+
+          startTrainerSession(trainerState.categoryKey, mistakes);
+
+        }
+
       } else {
+
         restartCurrentTrainerCategory();
+
       }
+
     }
 
     function exitTrainerMode() {
@@ -3382,11 +5036,30 @@
       document.getElementById('trainer-step-badge').innerHTML = '<span>🗺️ Шаг 1 из 2: Найдите и нажмите на страну на карте</span>';
 
       document.getElementById('trainer-target-name').textContent = country.name;
-      const catNames = country.cats.map(c => categories[c].shortLabel).join(' + ');
+
+      let contextBadge = '';
+
+      if (trainerState.mode === 'orgs' && trainerState.orgKey && internationalOrgs[trainerState.orgKey]) {
+
+        const org = internationalOrgs[trainerState.orgKey];
+
+        contextBadge = `Организация: ${org.icon} ${org.shortName}`;
+
+      } else {
+
+        const catNames = (country.cats || []).map(c => categories[c].shortLabel).join(' + ');
+
+        contextBadge = catNames ? `Категория: ${catNames}` : 'Политическая карта мира';
+
+      }
+
       document.getElementById('trainer-target-sub').textContent =
+
         country.shortName && country.shortName !== country.name
-          ? `Кратко: ${country.shortName} • Категория: ${catNames}`
-          : `Категория: ${catNames}`;
+
+          ? `Кратко: ${country.shortName} • ${contextBadge}`
+
+          : contextBadge;
 
       document.getElementById('trainer-attempts-hearts').textContent = renderHearts(3);
 
@@ -3546,11 +5219,27 @@
       };
 
       const aliases = customAliases[country.numCode];
+
       if (aliases && aliases.includes(userNorm)) {
+
         return true;
+
       }
 
+
+
+      const extraAliases = window.CAPITAL_ALIASES_EXTRA && window.CAPITAL_ALIASES_EXTRA[country.numCode];
+
+      if (extraAliases && extraAliases.includes(userNorm)) {
+
+        return true;
+
+      }
+
+
+
       return false;
+
     }
 
     function submitTrainerCapital(e) {
@@ -3708,10 +5397,29 @@
         rankBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/30 mb-1';
       }
 
-      const catTitle = trainerState.categoryKey === 'all'
-        ? 'Все категории (77 государств)'
-        : categories[trainerState.categoryKey].name;
-      document.getElementById('results-subtitle').textContent = `Категория: ${catTitle}`;
+      let catTitle = '';
+
+      if (trainerState.mode === 'orgs' && trainerState.orgKey && internationalOrgs[trainerState.orgKey]) {
+
+        const org = internationalOrgs[trainerState.orgKey];
+
+        catTitle = `${org.icon} ${org.shortName} — ${org.fullName}`;
+
+      } else {
+
+        catTitle = trainerState.categoryKey === 'all'
+
+          ? `Все категории (${unifiedCountries.length} государств)`
+
+          : categories[trainerState.categoryKey].name;
+
+      }
+
+      document.getElementById('results-subtitle').textContent = trainerState.mode === 'orgs'
+
+        ? `Организация: ${catTitle}`
+
+        : `Категория: ${catTitle}`;
 
       const listEl = document.getElementById('results-history-list');
       listEl.innerHTML = '';
@@ -3940,35 +5648,97 @@
     }
 
     let legendCollapsed = window.innerWidth < 1024;
+
     function applyLegendState() {
+
       if (trainerState.active) return;
+
       const legendBox = document.getElementById('map-legend');
+
       const body = document.getElementById('legend-body');
+
+      const orgBody = document.getElementById('legend-org-body');
+
       const btn = document.getElementById('legend-collapse-btn');
+
       if (isSmallScreen()) {
+
         legendBox.classList.toggle('hidden', legendCollapsed);
-        body.classList.remove('hidden');
+
+        if (browseMode === 'orgs') {
+
+          body.classList.add('hidden');
+
+          if (orgBody) orgBody.classList.remove('hidden');
+
+        } else {
+
+          body.classList.remove('hidden');
+
+          if (orgBody) orgBody.classList.add('hidden');
+
+        }
+
         btn.textContent = 'Закрыть';
+
       } else {
+
         legendBox.classList.remove('hidden');
-        body.classList.toggle('hidden', legendCollapsed);
+
+        if (browseMode === 'orgs') {
+
+          body.classList.add('hidden');
+
+          if (orgBody) orgBody.classList.toggle('hidden', legendCollapsed);
+
+        } else {
+
+          body.classList.toggle('hidden', legendCollapsed);
+
+          if (orgBody) orgBody.classList.add('hidden');
+
+        }
+
         btn.textContent = legendCollapsed ? 'Развернуть' : 'Свернуть';
+
       }
+
     }
+
+
 
     function toggleLegendCollapse() {
+
       legendCollapsed = !legendCollapsed;
+
       applyLegendState();
+
     }
 
+
+
     window.addEventListener('resize', () => {
+
       applyLegendState();
+
     });
 
+
+
     // Инициализация при запуске
+
+    renderOrganizationsPanel();
+
+    renderMobileOrgPills();
+
+    renderTrainerOrgList();
+
     applyLegendState();
+
     updateGroupToggleButtonsUI();
+
     renderCountryList();
+
     renderMarkersAndLabels();
   </script>
 </body>
